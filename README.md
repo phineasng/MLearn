@@ -11,4 +11,3 @@ Due to a recently developed interest in deep learning, the library may reveal a 
 
 ## Contributors
 phineasng	
-

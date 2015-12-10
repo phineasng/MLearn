@@ -1,0 +1,1 @@
+/usr/bin/c++       CMakeFiles/CustomCost.dir/main.cpp.o  -o CustomCost -rdynamic 

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 
 #include <MLearn/Core>
 #include <MLearn/Classification/Perceptron/Perceptron.h>
@@ -27,7 +28,7 @@
 
 void generateSamplesFrom2Spheres( SCALAR_TYPE cx0, SCALAR_TYPE cy0, SCALAR_TYPE cz0, SCALAR_TYPE r0,  SCALAR_TYPE cx1, SCALAR_TYPE cy1, SCALAR_TYPE cz1, SCALAR_TYPE r1, MLearn::MLMatrix<SCALAR_TYPE>& dataMatrix, MLearn::MLVector<CLASS_TYPE>& classes){
 	// resize data 
-	dataMatrix.resize(3,N_RANDOM_POINTS);
+	dataMatrix.resize(N_RANDOM_POINTS,3);
 	classes.resize(N_RANDOM_POINTS);
 
 	// get seed for random number generator
@@ -66,17 +67,17 @@ void generateSamplesFrom2Spheres( SCALAR_TYPE cx0, SCALAR_TYPE cy0, SCALAR_TYPE 
 
   		if ( pick_sphere(generator) ){
 
-  			dataMatrix(0,i) = x*d*r1 + cx1;
-  			dataMatrix(1,i) = y*d*r1 + cy1;
-  			dataMatrix(2,i) = z*d*r1 + cz1;
+  			dataMatrix(i,0) = x*d*r1 + cx1;
+  			dataMatrix(i,1) = y*d*r1 + cy1;
+  			dataMatrix(i,2) = z*d*r1 + cz1;
 
   			classes[i] = 1;
 
   		}else{
 
-  			dataMatrix(0,i) = x*d*r0 + cx0;
-  			dataMatrix(1,i) = y*d*r0 + cy0;
-  			dataMatrix(2,i) = z*d*r0 + cz0;
+  			dataMatrix(i,0) = x*d*r0 + cx0;
+  			dataMatrix(i,1) = y*d*r0 + cy0;
+  			dataMatrix(i,2) = z*d*r0 + cz0;
 
   			classes[i] = 0;
   			
@@ -110,7 +111,9 @@ int main(int argc, char* argv[]){
 	perceptron.setTolerance( 1e-2 );
 	perceptron.setLearningRate( 1 );
 	MLearn::MLVector< CLASS_TYPE > labels(N_RANDOM_POINTS);
-	MLearn::MLMatrix< SCALAR_TYPE > features(3,N_RANDOM_POINTS);
+	MLearn::MLMatrix< SCALAR_TYPE > features(N_RANDOM_POINTS,3);
+
+	std::cout<<std::setprecision(20);
 	
 	generateSamplesFrom2Spheres(CENTER_0_X,
 								CENTER_0_Y,
@@ -124,7 +127,7 @@ int main(int argc, char* argv[]){
 								labels);
 
 	//std::cout << perceptron.getWeights() << std::endl;
-	perceptron.train< MLearn::Classification::PerceptronTraining::ONLINE >( features, labels );
+	perceptron.train< MLearn::Classification::PerceptronTraining::BATCH_AVERAGE >( features, labels );
 	//std::cout << perceptron.getWeights() << std::endl;
 	if (std::fabs(perceptron.getWeights()[3]) > 1e-30){
 		std::cout 	<< - perceptron.getWeights()[0]/perceptron.getWeights()[3] << " " 

@@ -115,10 +115,10 @@ namespace MLearn{
 			*/
 			// TODO: find a nice way to optimize it
 			MLVector<ClassType> classify( const MLMatrix< WeightType >& dataToClassify) const{
-				MLVector<ClassType> labels(dataToClassify.cols());
-				auto dim_data = dataToClassify.rows();
+				MLVector<ClassType> labels(dataToClassify.rows());
+				auto dim_data = dataToClassify.cols();
 				for ( decltype(labels.size()) idx = 0; idx < labels.size(); ++idx ){
-					labels[idx] = ml_zero_one_sign< ClassType, WeightType >( _weights[0] + dataToClassify.col(idx).dot(_weights.tail(dim_data)) );
+					labels[idx] = ml_zero_one_sign< ClassType, WeightType >( _weights[0] + dataToClassify.row(idx).dot(_weights.tail(dim_data)) );
 				}
 				return labels;
 			}

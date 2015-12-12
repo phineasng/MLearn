@@ -14,7 +14,7 @@ namespace MLearn{
 		/*!
 		*
 		*	\brief		Cost Function interface class
-		*	\details	Implementation of the cost function using CRTP.
+		*	\details	Implementation of the cost function using CRTP
 		*	\author		phineasng
 		*
 		*/
@@ -30,20 +30,27 @@ namespace MLearn{
 			template< 	DifferentiationMode MODE, 
 						typename ScalarType,
 						typename = typename std::enable_if< std::is_floating_point<ScalarType>::value , ScalarType >::type >
-			void compute_gradient( const MLVector< ScalarType >& x, MLVector< ScalarType >& gradient, const NumericalGradientOption< MODE, ScalarType >& options = NumericalGradientOption< MODE, ScalarType >() ) const{
+			void compute_gradient( const MLVector< ScalarType >& x, MLVector< ScalarType >& gradient, const GradientOption< MODE, ScalarType >& options = GradientOption< MODE, ScalarType >() ) const{
 				Differentiator<MODE>::compute_gradient(*(static_cast<const Derived*>(this)),x,gradient,options);
 			}
 			// default functions
 			// -- eval
 			template < typename ScalarType >
 			ScalarType eval( const MLVector< ScalarType >& x ) const{
-				MLEARN_WARNING_MESSAGE("USING DEFAULT IMPLEMENTATION!");
+				MLEARN_FORCED_WARNING_MESSAGE("USING DEFAULT IMPLEMENTATION!");
 				return ScalarType(0);
 			}
 			// -- analytical gradient
 			template < typename ScalarType >
 			void compute_analytical_gradient(  const MLVector< ScalarType >& x, MLVector< ScalarType >& gradient ) const{
-				MLEARN_WARNING_MESSAGE("USING DEFAULT IMPLEMENTATION!");
+				MLEARN_FORCED_WARNING_MESSAGE("USING DEFAULT IMPLEMENTATION!");
+				gradient.resize(x.size());
+				return;
+			}
+			// -- stochastic gradient
+			template < typename ScalarType, typename IndexType >
+			void compute_stochastic_gradient(  const MLVector< ScalarType >& x, MLVector< ScalarType >& gradient, const MLVector< IndexType >& idx ) const{
+				MLEARN_FORCED_WARNING_MESSAGE("USING DEFAULT IMPLEMENTATION!");
 				gradient.resize(x.size());
 				return;
 			}

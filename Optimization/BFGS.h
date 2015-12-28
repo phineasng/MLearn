@@ -56,8 +56,10 @@ namespace MLearn{
 			UnsignedIntegerType getMaxIter() const { return max_iter; }
 			bool getHessianDummyInitialization() const { return initialize_hessian; }
 			// Minimize
-			template < typename Cost >
-			void minimize( const Cost& cost, MLVector< ScalarType >& x ){
+			template < 	typename Cost,
+						typename DERIVED,
+						typename = typename std::enable_if< std::is_same<typename DERIVED::Scalar, ScalarType >::value,typename DERIVED::Scalar >::type >
+			void minimize( const Cost& cost, Eigen::MatrixBase<DERIVED>& x ){
 				
 				// Initialization
 				if (initialize_hessian){

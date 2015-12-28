@@ -22,34 +22,52 @@ namespace MLearn{
 		class CostFunction{
 		public:
 			// evaluation function
-			template < typename ScalarType >
-			ScalarType evaluate( const MLVector< ScalarType >& x ) const{
+			template < 	typename DERIVED,
+				   		typename = typename std::enable_if< DERIVED::ColsAtCompileTime == 1 , DERIVED >::type >
+			typename DERIVED::Scalar evaluate( const Eigen::MatrixBase<DERIVED>& x ) const{
 				return static_cast<const Derived*>(this)->eval(x);
 			}
 			// gradient function
 			template< 	DifferentiationMode MODE, 
-						typename ScalarType,
-						typename = typename std::enable_if< std::is_floating_point<ScalarType>::value , ScalarType >::type >
-			void compute_gradient( const MLVector< ScalarType >& x, MLVector< ScalarType >& gradient, const GradientOption< MODE, ScalarType >& options = GradientOption< MODE, ScalarType >() ) const{
+						typename DERIVED,
+				   		typename DERIVED_2,
+				   		typename = typename std::enable_if< DERIVED::ColsAtCompileTime == 1 , DERIVED >::type,
+				   		typename = typename std::enable_if< DERIVED_2::ColsAtCompileTime == 1 , DERIVED_2 >::type,
+						typename = typename std::enable_if< std::is_floating_point<typename DERIVED::Scalar>::value , typename DERIVED::Scalar >::type,
+						typename = typename std::enable_if< std::is_same<typename DERIVED::Scalar, typename DERIVED_2::Scalar>::value,typename DERIVED::Scalar >::type >
+			void compute_gradient( const Eigen::MatrixBase<DERIVED>& x, Eigen::MatrixBase<DERIVED_2>& gradient, const GradientOption< MODE, typename DERIVED::Scalar >& options = GradientOption< MODE, typename DERIVED::Scalar >() ) const{
 				Differentiator<MODE>::compute_gradient(*(static_cast<const Derived*>(this)),x,gradient,options);
 			}
 			// default functions
 			// -- eval
-			template < typename ScalarType >
-			ScalarType eval( const MLVector< ScalarType >& x ) const{
+			template < 	typename DERIVED,
+				   		typename = typename std::enable_if< DERIVED::ColsAtCompileTime == 1 , DERIVED >::type >
+			typename DERIVED::Scalar eval( const Eigen::MatrixBase<DERIVED>& x ) const{
 				MLEARN_FORCED_WARNING_MESSAGE("USING DEFAULT IMPLEMENTATION!");
-				return ScalarType(0);
+				return DERIVED::Scalar(0);
 			}
 			// -- analytical gradient
-			template < typename ScalarType >
-			void compute_analytical_gradient(  const MLVector< ScalarType >& x, MLVector< ScalarType >& gradient ) const{
+			template< 	typename DERIVED,
+				   		typename DERIVED_2,
+				   		typename = typename std::enable_if< DERIVED::ColsAtCompileTime == 1 , DERIVED >::type,
+				   		typename = typename std::enable_if< DERIVED_2::ColsAtCompileTime == 1 , DERIVED_2 >::type,
+						typename = typename std::enable_if< std::is_floating_point<typename DERIVED::Scalar>::value , typename DERIVED::Scalar >::type,
+						typename = typename std::enable_if< std::is_same<typename DERIVED::Scalar, typename DERIVED_2::Scalar>::value,typename DERIVED::Scalar >::type >
+			void compute_analytical_gradient(  const Eigen::MatrixBase<DERIVED>& x, Eigen::MatrixBase<DERIVED_2>& gradient ) const{
 				MLEARN_FORCED_WARNING_MESSAGE("USING DEFAULT IMPLEMENTATION!");
 				gradient.resize(x.size());
 				return;
 			}
 			// -- stochastic gradient
-			template < typename ScalarType, typename IndexType >
-			void compute_stochastic_gradient(  const MLVector< ScalarType >& x, MLVector< ScalarType >& gradient, const MLVector< IndexType >& idx ) const{
+			template< 	typename IndexType,
+						typename DERIVED,
+				   		typename DERIVED_2,
+				   		typename = typename std::enable_if< DERIVED::ColsAtCompileTime == 1 , DERIVED >::type,
+				   		typename = typename std::enable_if< DERIVED_2::ColsAtCompileTime == 1 , DERIVED_2 >::type,
+						typename = typename std::enable_if< std::is_floating_point<typename DERIVED::Scalar>::value , typename DERIVED::Scalar >::type,
+						typename = typename std::enable_if< std::is_same<typename DERIVED::Scalar, typename DERIVED_2::Scalar>::value,typename DERIVED::Scalar >::type,
+						typename = typename std::enable_if< std::is_integral<IndexType>::value && std::is_unsigned<IndexType>::value, void >::type >
+			void compute_stochastic_gradient( const Eigen::MatrixBase<DERIVED>& x, Eigen::MatrixBase<DERIVED_2>& gradient, const MLVector< IndexType >& idx ) const{
 				MLEARN_FORCED_WARNING_MESSAGE("USING DEFAULT IMPLEMENTATION!");
 				gradient.resize(x.size());
 				return;

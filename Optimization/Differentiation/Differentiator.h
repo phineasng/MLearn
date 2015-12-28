@@ -16,7 +16,8 @@ namespace MLearn{
 		};
 
 		// Differentiation options		
-		template < DifferentiationMode MODE, typename ScalarType = double, typename IndexType = uint >
+		template < 	DifferentiationMode MODE, typename ScalarType = double, typename IndexType = uint,
+					typename = typename std::enable_if< std::is_integral<IndexType>::value && std::is_unsigned<IndexType>::value, IndexType >::type >
 		struct GradientOption{
 			// Constructor
 			GradientOption( const ScalarType& ref_step = 1e-7 ): step_size(ref_step) {}
@@ -34,68 +35,139 @@ namespace MLearn{
 			const MLVector< IndexType >& to_sample;
 		};
 
-
-
-
 		// Concrete  Differentiator
 		template < DifferentiationMode MODE >
 		class Differentiator{
 		public:
 			// --- gradient
-			template < typename DifferentiableCost, typename ScalarType = double, typename IndexType = uint >
-			static void compute_gradient(const DifferentiableCost& cost,const MLVector< ScalarType >& x, MLVector< ScalarType >& gradient, const GradientOption< MODE, ScalarType, IndexType >& options = GradientOption< MODE, ScalarType, IndexType >());
+			template < 	typename DifferentiableCost, 
+						typename IndexType, 
+						typename DERIVED,
+				   		typename DERIVED_2,
+				   		typename = typename std::enable_if< DERIVED::ColsAtCompileTime == 1 , DERIVED >::type,
+				   		typename = typename std::enable_if< DERIVED_2::ColsAtCompileTime == 1 , DERIVED_2 >::type,
+						typename = typename std::enable_if< std::is_floating_point<typename DERIVED::Scalar>::value , typename DERIVED::Scalar >::type,
+						typename = typename std::enable_if< std::is_same<typename DERIVED::Scalar, typename DERIVED_2::Scalar>::value,typename DERIVED::Scalar >::type,
+						typename = typename std::enable_if< std::is_integral<IndexType>::value && std::is_unsigned<IndexType>::value, IndexType >::type >
+			static inline void compute_gradient(const DifferentiableCost& cost,const Eigen::MatrixBase<DERIVED>& x, Eigen::MatrixBase<DERIVED_2>& gradient, const GradientOption< MODE, typename DERIVED::Scalar, IndexType >& options = GradientOption< MODE, typename DERIVED::Scalar, IndexType >() );
 		};
 
 		// Specialization
 		// --- analytical
-		template<> template< typename DifferentiableCost, typename ScalarType, typename IndexType >
-		void Differentiator<DifferentiationMode::ANALYTICAL>::compute_gradient(const DifferentiableCost& cost,const MLVector< ScalarType >& x, MLVector< ScalarType >& gradient, const GradientOption< DifferentiationMode::ANALYTICAL, ScalarType, IndexType >& options ){
-			cost.compute_analytical_gradient(x,gradient);
-		}
+		template <>
+		class Differentiator<DifferentiationMode::ANALYTICAL>{
+		public:
+			// --- gradient
+			template < 	typename DifferentiableCost, 
+						typename IndexType, 
+						typename DERIVED,
+				   		typename DERIVED_2,
+				   		typename = typename std::enable_if< DERIVED::ColsAtCompileTime == 1 , DERIVED >::type,
+				   		typename = typename std::enable_if< DERIVED_2::ColsAtCompileTime == 1 , DERIVED_2 >::type,
+						typename = typename std::enable_if< std::is_floating_point<typename DERIVED::Scalar>::value , typename DERIVED::Scalar >::type,
+						typename = typename std::enable_if< std::is_same<typename DERIVED::Scalar, typename DERIVED_2::Scalar>::value,typename DERIVED::Scalar >::type,
+						typename = typename std::enable_if< std::is_integral<IndexType>::value && std::is_unsigned<IndexType>::value, IndexType >::type >
+			static inline void compute_gradient(const DifferentiableCost& cost,const Eigen::MatrixBase<DERIVED>& x, Eigen::MatrixBase<DERIVED_2>& gradient, const GradientOption< DifferentiationMode::ANALYTICAL, typename DERIVED::Scalar, IndexType >& options = GradientOption< DifferentiationMode::ANALYTICAL, typename DERIVED::Scalar, IndexType >() ){
+				cost.compute_analytical_gradient(x,gradient);
+			}	
+		};
+
 		// --- numerical forward
-		template<> template< typename DifferentiableCost, typename ScalarType, typename IndexType >
-		void Differentiator<DifferentiationMode::NUMERICAL_FORWARD>::compute_gradient(const DifferentiableCost& cost,const MLVector< ScalarType >& x, MLVector< ScalarType >& gradient, const GradientOption< DifferentiationMode::NUMERICAL_FORWARD, ScalarType, IndexType >& options ){
-			gradient.resize(x.size());
-			ScalarType inv_step_size = ScalarType(1)/options.step_size;
-			MLVector< ScalarType > x1 = x;
-			for ( decltype(x.size()) i = 0; i < x.size(); ++i ){
-				x1[i] += options.step_size;
-				gradient[i] = ( cost.evaluate(x1) - cost.evaluate(x) )*inv_step_size;
-				x1[i] = x[i];
+		template <>
+		class Differentiator<DifferentiationMode::NUMERICAL_FORWARD>{
+		public:
+			// --- gradient
+			template < 	typename DifferentiableCost, 
+						typename IndexType, 
+						typename DERIVED,
+				   		typename DERIVED_2,
+				   		typename = typename std::enable_if< DERIVED::ColsAtCompileTime == 1 , DERIVED >::type,
+				   		typename = typename std::enable_if< DERIVED_2::ColsAtCompileTime == 1 , DERIVED_2 >::type,
+						typename = typename std::enable_if< std::is_floating_point<typename DERIVED::Scalar>::value , typename DERIVED::Scalar >::type,
+						typename = typename std::enable_if< std::is_same<typename DERIVED::Scalar, typename DERIVED_2::Scalar>::value,typename DERIVED::Scalar >::type,
+						typename = typename std::enable_if< std::is_integral<IndexType>::value && std::is_unsigned<IndexType>::value, IndexType >::type >
+			static inline void compute_gradient(const DifferentiableCost& cost,const Eigen::MatrixBase<DERIVED>& x, Eigen::MatrixBase<DERIVED_2>& gradient, const GradientOption< DifferentiationMode::NUMERICAL_FORWARD, typename DERIVED::Scalar, IndexType >& options = GradientOption< DifferentiationMode::NUMERICAL_FORWARD, typename DERIVED::Scalar, IndexType >() ){
+				gradient.resize(x.size());
+				typename DERIVED::Scalar inv_step_size = typename DERIVED::Scalar(1)/options.step_size;
+				MLVector< typename DERIVED::Scalar > x1 = x;
+				for ( decltype(x.size()) i = 0; i < x.size(); ++i ){
+					x1[i] += options.step_size;
+					gradient[i] = ( cost.evaluate(x1) - cost.evaluate(x) )*inv_step_size;
+					x1[i] = x[i];
+				}
 			}
-		}
+		};
 		// --- numerical central
-		template<> template< typename DifferentiableCost, typename ScalarType, typename IndexType >
-		void Differentiator<DifferentiationMode::NUMERICAL_CENTRAL>::compute_gradient(const DifferentiableCost& cost,const MLVector< ScalarType >& x, MLVector< ScalarType >& gradient, const GradientOption< DifferentiationMode::NUMERICAL_CENTRAL, ScalarType, IndexType >& options ){
-			gradient.resize(x.size());
-			ScalarType inv_step_size = ScalarType(0.5)/options.step_size;
-			MLVector< ScalarType > x1 = x;
-			MLVector< ScalarType > x2 = x;
-			for ( decltype(x.size()) i = 0; i < x.size(); ++i ){
-				x1[i] += options.step_size;
-				x2[i] -= options.step_size;
-				gradient[i] = ( cost.evaluate(x1) - cost.evaluate(x2) )*inv_step_size;
-				x1[i] = x[i];
-				x2[i] = x[i];
+		template <>
+		class Differentiator<DifferentiationMode::NUMERICAL_CENTRAL>{
+		public:
+			// --- gradient
+			template < 	typename DifferentiableCost, 
+						typename IndexType, 
+						typename DERIVED,
+				   		typename DERIVED_2,
+				   		typename = typename std::enable_if< DERIVED::ColsAtCompileTime == 1 , DERIVED >::type,
+				   		typename = typename std::enable_if< DERIVED_2::ColsAtCompileTime == 1 , DERIVED_2 >::type,
+						typename = typename std::enable_if< std::is_floating_point<typename DERIVED::Scalar>::value , typename DERIVED::Scalar >::type,
+						typename = typename std::enable_if< std::is_same<typename DERIVED::Scalar, typename DERIVED_2::Scalar>::value,typename DERIVED::Scalar >::type,
+						typename = typename std::enable_if< std::is_integral<IndexType>::value && std::is_unsigned<IndexType>::value, IndexType >::type >
+			static inline void compute_gradient(const DifferentiableCost& cost,const Eigen::MatrixBase<DERIVED>& x, Eigen::MatrixBase<DERIVED_2>& gradient, const GradientOption< DifferentiationMode::NUMERICAL_CENTRAL, typename DERIVED::Scalar, IndexType >& options = GradientOption< DifferentiationMode::NUMERICAL_CENTRAL, typename DERIVED::Scalar, IndexType >() ){
+				gradient.resize(x.size());
+				typename DERIVED::Scalar inv_step_size = typename DERIVED::Scalar(0.5)/options.step_size;
+				MLVector< typename DERIVED::Scalar > x1 = x;
+				MLVector< typename DERIVED::Scalar > x2 = x;
+				for ( decltype(x.size()) i = 0; i < x.size(); ++i ){
+					x1[i] += options.step_size;
+					x2[i] -= options.step_size;
+					gradient[i] = ( cost.evaluate(x1) - cost.evaluate(x2) )*inv_step_size;
+					x1[i] = x[i];
+					x2[i] = x[i];
+				}
 			}
-		}
+		};
 		// --- numerical backward
-		template<> template< typename DifferentiableCost, typename ScalarType, typename IndexType >
-		void Differentiator<DifferentiationMode::NUMERICAL_BACKWARD>::compute_gradient(const DifferentiableCost& cost,const MLVector< ScalarType >& x, MLVector< ScalarType >& gradient, const GradientOption< DifferentiationMode::NUMERICAL_BACKWARD, ScalarType, IndexType >& options ){
-			gradient.resize(x.size());
-			ScalarType inv_step_size = ScalarType(1)/options.step_size;
-			MLVector< ScalarType > x1 = x;
-			for ( decltype(x.size()) i = 0; i < x.size(); ++i ){
-				x1[i] -= options.step_size;
-				gradient[i] = ( cost.evaluate(x) - cost.evaluate(x1) )*inv_step_size;
-				x1[i] = x[i];
+		template <>
+		class Differentiator<DifferentiationMode::NUMERICAL_BACKWARD>{
+		public:
+			// --- gradient
+			template < 	typename DifferentiableCost, 
+						typename IndexType, 
+						typename DERIVED,
+				   		typename DERIVED_2,
+				   		typename = typename std::enable_if< DERIVED::ColsAtCompileTime == 1 , DERIVED >::type,
+				   		typename = typename std::enable_if< DERIVED_2::ColsAtCompileTime == 1 , DERIVED_2 >::type,
+						typename = typename std::enable_if< std::is_floating_point<typename DERIVED::Scalar>::value , typename DERIVED::Scalar >::type,
+						typename = typename std::enable_if< std::is_same<typename DERIVED::Scalar, typename DERIVED_2::Scalar>::value,typename DERIVED::Scalar >::type,
+						typename = typename std::enable_if< std::is_integral<IndexType>::value && std::is_unsigned<IndexType>::value, IndexType >::type >
+			static inline void compute_gradient(const DifferentiableCost& cost,const Eigen::MatrixBase<DERIVED>& x, Eigen::MatrixBase<DERIVED_2>& gradient, const GradientOption< DifferentiationMode::NUMERICAL_BACKWARD, typename DERIVED::Scalar, IndexType >& options = GradientOption< DifferentiationMode::NUMERICAL_BACKWARD, typename DERIVED::Scalar, IndexType >() ){
+				gradient.resize(x.size());
+				typename DERIVED::Scalar inv_step_size = typename DERIVED::Scalar(1)/options.step_size;
+				MLVector< typename DERIVED::Scalar > x1 = x;
+				for ( decltype(x.size()) i = 0; i < x.size(); ++i ){
+					x1[i] -= options.step_size;
+					gradient[i] = ( cost.evaluate(x) - cost.evaluate(x1) )*inv_step_size;
+					x1[i] = x[i];
+				}
 			}
-		}
+		};
 		// --- stochastic
-		template<> template< typename DifferentiableCost, typename ScalarType, typename IndexType >
-		void Differentiator<DifferentiationMode::STOCHASTIC>::compute_gradient(const DifferentiableCost& cost,const MLVector< ScalarType >& x, MLVector< ScalarType >& gradient, const GradientOption< DifferentiationMode::STOCHASTIC, ScalarType, IndexType >& options ){
-			cost.compute_stochastic_gradient(x,gradient,options.to_sample);
-		}
+		template <>
+		class Differentiator<DifferentiationMode::STOCHASTIC>{
+		public:
+			// --- gradient
+			template < 	typename DifferentiableCost, 
+						typename IndexType, 
+						typename DERIVED,
+				   		typename DERIVED_2,
+				   		typename = typename std::enable_if< DERIVED::ColsAtCompileTime == 1 , DERIVED >::type,
+				   		typename = typename std::enable_if< DERIVED_2::ColsAtCompileTime == 1 , DERIVED_2 >::type,
+						typename = typename std::enable_if< std::is_floating_point<typename DERIVED::Scalar>::value , typename DERIVED::Scalar >::type,
+						typename = typename std::enable_if< std::is_same<typename DERIVED::Scalar, typename DERIVED_2::Scalar>::value,typename DERIVED::Scalar >::type,
+						typename = typename std::enable_if< std::is_integral<IndexType>::value && std::is_unsigned<IndexType>::value, IndexType >::type >
+			static inline void compute_gradient(const DifferentiableCost& cost,const Eigen::MatrixBase<DERIVED>& x, Eigen::MatrixBase<DERIVED_2>& gradient, const GradientOption< DifferentiationMode::NUMERICAL_FORWARD, typename DERIVED::Scalar, IndexType >& options = GradientOption< DifferentiationMode::NUMERICAL_FORWARD, typename DERIVED::Scalar, IndexType >() ){
+				cost.compute_stochastic_gradient(x,gradient,options.to_sample);
+			}
+		};
 
 	}
 

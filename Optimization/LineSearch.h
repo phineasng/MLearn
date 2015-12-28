@@ -13,9 +13,6 @@
 // Optimization includes
 #include "Differentiation/Differentiator.h"
 
-
-// TODO: check if the cast MLVector<ScalarType>( expression ) is optimized (i.e. just a cast of the expression) or a temporary is needed for better performance
-
 namespace MLearn{
 
 	namespace Optimization{
@@ -39,8 +36,20 @@ namespace MLearn{
 			LineSearch( const ScalarType& step = 0.01 ): step_size(step) {}
 			ScalarType step_size;
 			// algorithm
-			template < typename CostFunc, DifferentiationMode MODE, uint VERB_LEVEL = 0u, uint VERB_REF = 0 >
-			ScalarType getStep( const CostFunc& cost, const MLVector<ScalarType>& x, const MLVector<ScalarType>& gradient, const MLVector<ScalarType>& direction, const GradientOption<MODE,ScalarType,IndexType>& gradient_options ) const{
+			template < 	typename CostFunc, 
+						DifferentiationMode MODE, 
+						uint VERB_LEVEL = 0u, 
+						uint VERB_REF = 0,
+						typename DERIVED,
+						typename DERIVED_2,
+						typename DERIVED_3,
+				   		typename = typename std::enable_if< DERIVED::ColsAtCompileTime == 1 , DERIVED >::type,
+				   		typename = typename std::enable_if< DERIVED_2::ColsAtCompileTime == 1 , DERIVED_2 >::type,
+				   		typename = typename std::enable_if< DERIVED_3::ColsAtCompileTime == 1 , DERIVED_3 >::type,
+						typename = typename std::enable_if< std::is_same<typename DERIVED::Scalar, typename DERIVED_2::Scalar>::value,typename DERIVED::Scalar >::type,
+						typename = typename std::enable_if< std::is_same<typename DERIVED_2::Scalar, typename DERIVED_3::Scalar>::value,typename DERIVED::Scalar >::type,
+						typename = typename std::enable_if< std::is_same<typename DERIVED::Scalar, ScalarType >::value,typename DERIVED::Scalar >::type > 
+			ScalarType getStep( const CostFunc& cost, const Eigen::MatrixBase< DERIVED >& x, const Eigen::MatrixBase< DERIVED_2 >& gradient, const Eigen::MatrixBase< DERIVED_3 >& direction, const GradientOption<MODE,ScalarType,IndexType>& gradient_options ) const{
 				return step_size;
 			}
 		};
@@ -53,20 +62,32 @@ namespace MLearn{
 			ScalarType c;
 			IndexType max_iter;
 			// algorithm
-			template < typename CostFunc, DifferentiationMode MODE,  uint VERB_LEVEL = 0u, uint VERB_REF = 0 >
-			ScalarType getStep( const CostFunc& cost, const MLVector<ScalarType>& x_curr, const MLVector<ScalarType>& gradient_curr, const MLVector<ScalarType>& direction, const GradientOption<MODE,ScalarType,IndexType>& gradient_options) const{
+			template < 	typename CostFunc, 
+						DifferentiationMode MODE, 
+						uint VERB_LEVEL = 0u, 
+						uint VERB_REF = 0,
+						typename DERIVED,
+						typename DERIVED_2,
+						typename DERIVED_3,
+				   		typename = typename std::enable_if< DERIVED::ColsAtCompileTime == 1 , DERIVED >::type,
+				   		typename = typename std::enable_if< DERIVED_2::ColsAtCompileTime == 1 , DERIVED_2 >::type,
+				   		typename = typename std::enable_if< DERIVED_3::ColsAtCompileTime == 1 , DERIVED_3 >::type,
+						typename = typename std::enable_if< std::is_same<typename DERIVED::Scalar, typename DERIVED_2::Scalar>::value,typename DERIVED::Scalar >::type,
+						typename = typename std::enable_if< std::is_same<typename DERIVED_2::Scalar, typename DERIVED_3::Scalar>::value,typename DERIVED::Scalar >::type,
+						typename = typename std::enable_if< std::is_same<typename DERIVED::Scalar, ScalarType >::value,typename DERIVED::Scalar >::type > 
+			ScalarType getStep( const CostFunc& cost, const Eigen::MatrixBase< DERIVED >& x_curr, const Eigen::MatrixBase< DERIVED_2 >& gradient_curr, const Eigen::MatrixBase< DERIVED_3 >& direction, const GradientOption<MODE,ScalarType,IndexType>& gradient_options ) const{
 				
 				Utility::VerbosityLogger<VERB_LEVEL,VERB_REF>::log( "< Started backtracking line search >\n" );
 				
 				ScalarType f_curr = cost.evaluate(x_curr);
 				ScalarType delta_f = c*gradient_curr.dot(direction);
-				ScalarType new_f = cost.evaluate(MLVector<ScalarType>(x_curr + direction));
+				ScalarType new_f = cost.evaluate(x_curr + direction);
 				ScalarType t = ScalarType(1);
 				IndexType iter = IndexType(0);
 				while ( (new_f > f_curr + t*delta_f) && ( iter < max_iter) ){
 					
 					t *= gamma;
-					new_f = cost.evaluate(  MLVector<ScalarType>( x_curr + t*direction )  );
+					new_f = cost.evaluate(  x_curr + t*direction );
 
 					Utility::VerbosityLogger<VERB_LEVEL,VERB_REF>::log( iter );
 					Utility::VerbosityLogger<VERB_LEVEL,VERB_REF>::log( ") " );
@@ -93,8 +114,20 @@ namespace MLearn{
 			ScalarType c2;
 			IndexType max_iter;
 			// algorithm
-			template < typename CostFunc, DifferentiationMode MODE, uint VERB_LEVEL = 0u, uint VERB_REF = 0 >
-			typename std::enable_if< std::numeric_limits<ScalarType>::has_infinity, ScalarType >::type getStep( const CostFunc& cost, const MLVector<ScalarType>& x_curr, const MLVector<ScalarType>& gradient_curr, const MLVector<ScalarType>& direction, const GradientOption<MODE,ScalarType,IndexType>& gradient_options) const{
+			template < 	typename CostFunc, 
+						DifferentiationMode MODE, 
+						uint VERB_LEVEL = 0u, 
+						uint VERB_REF = 0,
+						typename DERIVED,
+						typename DERIVED_2,
+						typename DERIVED_3,
+				   		typename = typename std::enable_if< DERIVED::ColsAtCompileTime == 1 , DERIVED >::type,
+				   		typename = typename std::enable_if< DERIVED_2::ColsAtCompileTime == 1 , DERIVED_2 >::type,
+				   		typename = typename std::enable_if< DERIVED_3::ColsAtCompileTime == 1 , DERIVED_3 >::type,
+						typename = typename std::enable_if< std::is_same<typename DERIVED::Scalar, typename DERIVED_2::Scalar>::value,typename DERIVED::Scalar >::type,
+						typename = typename std::enable_if< std::is_same<typename DERIVED_2::Scalar, typename DERIVED_3::Scalar>::value,typename DERIVED::Scalar >::type,
+						typename = typename std::enable_if< std::is_same<typename DERIVED::Scalar, ScalarType >::value,typename DERIVED::Scalar >::type > 
+			ScalarType getStep( const CostFunc& cost, const Eigen::MatrixBase< DERIVED >& x_curr, const Eigen::MatrixBase< DERIVED_2 >& gradient_curr, const Eigen::MatrixBase< DERIVED_3 >& direction, const GradientOption<MODE,ScalarType,IndexType>& gradient_options ) const{
 				
 				Utility::VerbosityLogger<VERB_LEVEL,VERB_REF>::log( "< Started bisection line search >\n" );
 				
@@ -109,11 +142,13 @@ namespace MLearn{
 				ScalarType t = ScalarType(1);
 				
 				IndexType iter = IndexType(0);
+				MLVector<ScalarType> temporary;
 
 				while ( iter < max_iter ){
 					
-					new_f = cost.evaluate( MLVector<ScalarType>(x_curr + t*direction) );
-					cost.compute_gradient( MLVector<ScalarType>(x_curr + t*direction), new_gradient, gradient_options );
+					temporary = x_curr + t*direction;
+					new_f = cost.evaluate( temporary );
+					cost.compute_gradient( temporary, new_gradient, gradient_options );
 
 					if ( new_f > (f_curr+c1*t*delta_f) ){
 						beta = t;

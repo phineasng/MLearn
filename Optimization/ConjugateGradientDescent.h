@@ -92,8 +92,10 @@ namespace MLearn{
 			ScalarType getTolerance() const { return tolerance; }
 			UnsignedIntegerType getMaxIter() const { return max_iter; }
 			// Minimize
-			template < typename Cost >
-			void minimize( const Cost& cost, MLVector< ScalarType >& x ){
+			template < 	typename Cost,
+						typename DERIVED,
+						typename = typename std::enable_if< std::is_same<typename DERIVED::Scalar, ScalarType >::value,typename DERIVED::Scalar >::type >
+			void minimize( const Cost& cost, Eigen::MatrixBase<DERIVED>& x ){
 				MLVector< ScalarType > delta_x_n(x.size());
 				MLVector< ScalarType > delta_x_n_1(x.size());
 				MLVector< ScalarType > s_n_1(x.size());

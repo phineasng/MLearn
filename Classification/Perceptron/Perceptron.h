@@ -44,9 +44,9 @@ namespace MLearn{
 			// -- integer argument: number of features (without accounting for the bias)
 			template< typename U_INT, typename = typename std::enable_if< std::is_integral< U_INT >::value && std::is_unsigned< U_INT >::value, U_INT>::type >
 			explicit Perceptron( const U_INT& N ): _weights(N+1) {}
-			// -- const reference MLVector
+			// -- const reference weights vector
 			explicit Perceptron( const MLVector< WeightType >& refWeights ): _weights(refWeights) {}
-			// -- rvalue MLVector
+			// -- rvalue weights vector
 			explicit Perceptron( MLVector< WeightType >&& refWeights ): _weights(std::move(refWeights)) {}
 			// -- copy constructor
 			Perceptron( const Perceptron<WeightType,ClassType>& refPerceptron ): _weights(refPerceptron._weights), _tolerance(refPerceptron._tolerance), _learning_rate(refPerceptron._learning_rate), _max_iter(refPerceptron._max_iter) {}
@@ -110,15 +110,14 @@ namespace MLearn{
 
 			/*!
 			*	\brief 		Classification function.
-			*	\details 	Used the trained perceptron, to predict the label
+			*	\details 	Use the trained perceptron, to predict the labels
 			*
 			*/
-			// TODO: find a nice way to optimize it
 			MLVector<ClassType> classify( const MLMatrix< WeightType >& dataToClassify) const{
-				MLVector<ClassType> labels(dataToClassify.rows());
-				auto dim_data = dataToClassify.cols();
+				MLVector<ClassType> labels(dataToClassify.cols());
+				auto dim_data = dataToClassify.rows();
 				for ( decltype(labels.size()) idx = 0; idx < labels.size(); ++idx ){
-					labels[idx] = ml_zero_one_sign< ClassType, WeightType >( _weights[0] + dataToClassify.row(idx).dot(_weights.tail(dim_data)) );
+					labels[idx] = ml_zero_one_sign< ClassType, WeightType >( _weights[0] + dataToClassify.col(idx).dot(_weights.tail(dim_data)) );
 				}
 				return labels;
 			}

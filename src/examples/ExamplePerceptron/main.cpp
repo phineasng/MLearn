@@ -1,15 +1,18 @@
 #include <iostream>
-#include <iomanip>
 
 #include <MLearn/Core>
 #include <MLearn/Classification/Perceptron/Perceptron.h>
 
 #define N_RANDOM_POINTS 5000
+#define N_RANDOM_POINTS_2 50000
+#define EXAMPLE_TRAINING_MODE MLearn::Classification::PerceptronTraining::ONLINE
+#define EXAMPLE_TRAINING_MODE_2 MLearn::Classification::PerceptronTraining::BATCH
 
 #include <chrono>
 #include <random>
 #include <cmath>
 #include <fstream>
+#include <iomanip>
 
 #define SCALAR_TYPE double
 #define CLASS_TYPE ushort
@@ -17,19 +20,17 @@
 #define CENTER_0_X 	0.0
 #define CENTER_0_Y 	0.0
 #define CENTER_0_Z 	0.0
-#define RADIUS_0 	0.42
+#define RADIUS_0 	0.1
 
-#define CENTER_1_X 	0.68
-#define CENTER_1_Y 	0.64
-#define CENTER_1_Z 	1.72
+#define CENTER_1_X 	0.5
+#define CENTER_1_Y 	0.5
+#define CENTER_1_Z 	0.1
 #define RADIUS_1 	0.3
 
 #define FILE_NAME "output.txt"
 
 void generateSamplesFrom2Spheres( SCALAR_TYPE cx0, SCALAR_TYPE cy0, SCALAR_TYPE cz0, SCALAR_TYPE r0,  SCALAR_TYPE cx1, SCALAR_TYPE cy1, SCALAR_TYPE cz1, SCALAR_TYPE r1, MLearn::MLMatrix<SCALAR_TYPE>& dataMatrix, MLearn::MLVector<CLASS_TYPE>& classes){
-	// resize data 
-	dataMatrix.resize(N_RANDOM_POINTS,3);
-	classes.resize(N_RANDOM_POINTS);
+	auto n_sample = classes.size(); 
 
 	// get seed for random number generator
   	unsigned seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
@@ -50,7 +51,7 @@ void generateSamplesFrom2Spheres( SCALAR_TYPE cx0, SCALAR_TYPE cy0, SCALAR_TYPE 
   	// bernoulli distribution for picking the sphere
   	std::bernoulli_distribution pick_sphere(0.5);
 
-  	for (int i = 0; i < N_RANDOM_POINTS; ++i){
+  	for (int i = 0; i < n_sample; ++i){
   		d = distance(generator);
   		x = X(generator);
   		y = Y(generator);
@@ -67,17 +68,17 @@ void generateSamplesFrom2Spheres( SCALAR_TYPE cx0, SCALAR_TYPE cy0, SCALAR_TYPE 
 
   		if ( pick_sphere(generator) ){
 
-  			dataMatrix(i,0) = x*d*r1 + cx1;
-  			dataMatrix(i,1) = y*d*r1 + cy1;
-  			dataMatrix(i,2) = z*d*r1 + cz1;
+  			dataMatrix(0,i) = x*d*r1 + cx1;
+  			dataMatrix(1,i) = y*d*r1 + cy1;
+  			dataMatrix(2,i) = z*d*r1 + cz1;
 
   			classes[i] = 1;
 
   		}else{
 
-  			dataMatrix(i,0) = x*d*r0 + cx0;
-  			dataMatrix(i,1) = y*d*r0 + cy0;
-  			dataMatrix(i,2) = z*d*r0 + cz0;
+  			dataMatrix(0,i) = x*d*r0 + cx0;
+  			dataMatrix(1,i) = y*d*r0 + cy0;
+  			dataMatrix(2,i) = z*d*r0 + cz0;
 
   			classes[i] = 0;
   			
@@ -111,9 +112,8 @@ int main(int argc, char* argv[]){
 	perceptron.setTolerance( 1e-2 );
 	perceptron.setLearningRate( 1 );
 	MLearn::MLVector< CLASS_TYPE > labels(N_RANDOM_POINTS);
-	MLearn::MLMatrix< SCALAR_TYPE > features(N_RANDOM_POINTS,3);
-
-	std::cout<<std::setprecision(20);
+	MLearn::MLMatrix< SCALAR_TYPE > features(3,N_RANDOM_POINTS);
+	std::cout << std::setprecision(20);
 	
 	generateSamplesFrom2Spheres(CENTER_0_X,
 								CENTER_0_Y,
@@ -126,17 +126,12 @@ int main(int argc, char* argv[]){
 								features,
 								labels);
 
-	//std::cout << perceptron.getWeights() << std::endl;
-	perceptron.train< MLearn::Classification::PerceptronTraining::BATCH_AVERAGE >( features, labels );
-	//std::cout << perceptron.getWeights() << std::endl;
-	if (std::fabs(perceptron.getWeights()[3]) > 1e-30){
-		std::cout 	<< - perceptron.getWeights()[0]/perceptron.getWeights()[3] << " " 
-					<< - perceptron.getWeights()[1]/perceptron.getWeights()[3] << " "
-					<< - perceptron.getWeights()[2]/perceptron.getWeights()[3] << std::endl;
-	}
+	perceptron.train< EXAMPLE_TRAINING_MODE >( features, labels );
 
 	// output file to plot
 	//outputFile(features,labels);
+	labels.resize(N_RANDOM_POINTS_2);
+	features.resize(3,N_RANDOM_POINTS_2);
 
 	generateSamplesFrom2Spheres(CENTER_0_X,
 								CENTER_0_Y,
@@ -149,6 +144,40 @@ int main(int argc, char* argv[]){
 								features,
 								labels);
 	MLearn::MLVector<ushort> predicted = perceptron.classify(features);
-	std::cout << "Error 0-1 loss on new data: " << (predicted-labels).array().abs().mean() << std::endl;
+	std::cout << "Error 0-1 loss on new data: " << ((predicted-labels).array()>0).count()/(double)labels.size() << std::endl;
+
+	perceptron.initializeRandom(0.05f);	
+	labels.resize(N_RANDOM_POINTS);
+	features.resize(3,N_RANDOM_POINTS);
+
+	generateSamplesFrom2Spheres(CENTER_0_X,
+								CENTER_0_Y,
+								CENTER_0_Z,
+								RADIUS_0,
+								CENTER_1_X,
+								CENTER_1_Y,
+								CENTER_1_Z,
+								RADIUS_1,
+								features,
+								labels);
+	perceptron.train< EXAMPLE_TRAINING_MODE_2 >( features, labels );
+	// output file to plot
+	//outputFile(features,labels);
+	labels.resize(N_RANDOM_POINTS_2);
+	features.resize(3,N_RANDOM_POINTS_2);
+
+	generateSamplesFrom2Spheres(CENTER_0_X,
+								CENTER_0_Y,
+								CENTER_0_Z,
+								RADIUS_0,
+								CENTER_1_X,
+								CENTER_1_Y,
+								CENTER_1_Z,
+								RADIUS_1,
+								features,
+								labels);
+	predicted = perceptron.classify(features);
+	std::cout << "Error 0-1 loss on new data: " << ((predicted-labels).array()>0).count()/(double)labels.size() << std::endl;
+
 	return 0;
 }

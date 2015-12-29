@@ -10,12 +10,10 @@
 
 class SquareLoss: public MLearn::Optimization::CostFunction<SquareLoss>{
 public:
-	template < typename ScalarType >
-	ScalarType eval(const MLearn::MLVector<ScalarType>& x) const{
+	TEMPLATED_SIGNATURE_EVAL_FUNCTION(x){
 		return x.squaredNorm();
 	}
-	template < typename ScalarType >
-	void compute_analytical_gradient(const MLearn::MLVector<ScalarType>& x,MLearn::MLVector<ScalarType>& gradient) const{
+	TEMPLATED_SIGNATURE_ANALYTICAL_GRADIENT_FUNCTION(x,gradient){
 		gradient = 2*x;
 	}
 };

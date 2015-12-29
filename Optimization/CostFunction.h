@@ -75,6 +75,12 @@ namespace MLearn{
 				MLEARN_FORCED_WARNING_MESSAGE("USING DEFAULT IMPLEMENTATION!");
 				return typename DERIVED::Scalar(0);
 			}
+			// -- evaluate for numerical gradient ( mainly to interface with particular costs, e.g. the one for neural networks )
+			template < 	typename DERIVED,
+				   		typename = typename std::enable_if< DERIVED::ColsAtCompileTime == 1 , DERIVED >::type >
+			typename DERIVED::Scalar eval_for_numerical_gradient( const Eigen::MatrixBase<DERIVED>& x ) const{
+				return static_cast<const Derived*>(this)->eval(x);
+			}
 			// -- analytical gradient
 			template< 	typename DERIVED,
 				   		typename DERIVED_2,

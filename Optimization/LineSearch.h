@@ -79,15 +79,17 @@ namespace MLearn{
 				
 				Utility::VerbosityLogger<VERB_LEVEL,VERB_REF>::log( "< Started backtracking line search >\n" );
 				
+				MLVector<ScalarType> temporary = x_curr + direction;
 				ScalarType f_curr = cost.evaluate(x_curr);
 				ScalarType delta_f = c*gradient_curr.dot(direction);
-				ScalarType new_f = cost.evaluate(x_curr + direction);
+				ScalarType new_f = cost.evaluate(temporary);
 				ScalarType t = ScalarType(1);
 				IndexType iter = IndexType(0);
 				while ( (new_f > f_curr + t*delta_f) && ( iter < max_iter) ){
 					
 					t *= gamma;
-					new_f = cost.evaluate(  x_curr + t*direction );
+					temporary = x_curr + t*direction;
+					new_f = cost.evaluate(  temporary );
 
 					Utility::VerbosityLogger<VERB_LEVEL,VERB_REF>::log( iter );
 					Utility::VerbosityLogger<VERB_LEVEL,VERB_REF>::log( ") " );

@@ -92,7 +92,7 @@ namespace MLearn{
 				MLVector< typename DERIVED::Scalar > x1 = x;
 				for ( decltype(x.size()) i = 0; i < x.size(); ++i ){
 					x1[i] += options.step_size;
-					gradient[i] = ( cost.evaluate(x1) - cost.evaluate(x) )*inv_step_size;
+					gradient[i] = ( cost.eval_for_numerical_gradient(x1) - cost.eval_for_numerical_gradient(x) )*inv_step_size;
 					x1[i] = x[i];
 				}
 			}
@@ -119,7 +119,7 @@ namespace MLearn{
 				for ( decltype(x.size()) i = 0; i < x.size(); ++i ){
 					x1[i] += options.step_size;
 					x2[i] -= options.step_size;
-					gradient[i] = ( cost.evaluate(x1) - cost.evaluate(x2) )*inv_step_size;
+					gradient[i] = ( cost.eval_for_numerical_gradient(x1) - cost.eval_for_numerical_gradient(x2) )*inv_step_size;
 					x1[i] = x[i];
 					x2[i] = x[i];
 				}
@@ -145,7 +145,7 @@ namespace MLearn{
 				MLVector< typename DERIVED::Scalar > x1 = x;
 				for ( decltype(x.size()) i = 0; i < x.size(); ++i ){
 					x1[i] -= options.step_size;
-					gradient[i] = ( cost.evaluate(x) - cost.evaluate(x1) )*inv_step_size;
+					gradient[i] = ( cost.eval_for_numerical_gradient(x) - cost.eval_for_numerical_gradient(x1) )*inv_step_size;
 					x1[i] = x[i];
 				}
 			}

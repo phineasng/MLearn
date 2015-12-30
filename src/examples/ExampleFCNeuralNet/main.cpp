@@ -55,7 +55,7 @@ int main(int argc, char* argv[]){
 	Optimization::GradientOption<Optimization::DifferentiationMode::NUMERICAL_CENTRAL,double,uint> options_numeric(1e-7);
 	
 	// Build cost function
-	TEMPLATED_FC_NEURAL_NET_COST_CONSTRUCTION( loss,reg,layers,samples_reduced,outputs_reduced,explorer,options,grad_output,gradient_pre_allocation,cost);
+	TEMPLATED_FC_NEURAL_NET_COST_CONSTRUCTION( loss,reg,layers,samples,outputs,explorer,options,grad_output,gradient_pre_allocation,cost);
 
 	cost.compute_gradient<Optimization::DifferentiationMode::ANALYTICAL>(weights,gradient);
 

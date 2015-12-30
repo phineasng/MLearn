@@ -33,7 +33,7 @@ namespace MLearn{
 		template < typename ScalarType, typename IndexType >
 		class LineSearch< LineSearchStrategy::FIXED, ScalarType, IndexType >{
 		public:
-			LineSearch( const ScalarType& step = 0.01 ): step_size(step) {}
+			LineSearch( const ScalarType& step = 0.05 ): step_size(step) {}
 			ScalarType step_size;
 			// algorithm
 			template < 	typename CostFunc, 
@@ -79,17 +79,15 @@ namespace MLearn{
 				
 				Utility::VerbosityLogger<VERB_LEVEL,VERB_REF>::log( "< Started backtracking line search >\n" );
 				
-				MLVector<ScalarType> temporary = x_curr + direction;
 				ScalarType f_curr = cost.evaluate(x_curr);
 				ScalarType delta_f = c*gradient_curr.dot(direction);
-				ScalarType new_f = cost.evaluate(temporary);
+				ScalarType new_f = cost.evaluate(x_curr + direction);
 				ScalarType t = ScalarType(1);
 				IndexType iter = IndexType(0);
 				while ( (new_f > f_curr + t*delta_f) && ( iter < max_iter) ){
 					
 					t *= gamma;
-					temporary = x_curr + t*direction;
-					new_f = cost.evaluate(  temporary );
+					new_f = cost.evaluate(x_curr + t*direction);
 
 					Utility::VerbosityLogger<VERB_LEVEL,VERB_REF>::log( iter );
 					Utility::VerbosityLogger<VERB_LEVEL,VERB_REF>::log( ") " );

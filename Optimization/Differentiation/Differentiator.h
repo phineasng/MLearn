@@ -164,7 +164,7 @@ namespace MLearn{
 						typename = typename std::enable_if< std::is_floating_point<typename DERIVED::Scalar>::value , typename DERIVED::Scalar >::type,
 						typename = typename std::enable_if< std::is_same<typename DERIVED::Scalar, typename DERIVED_2::Scalar>::value,typename DERIVED::Scalar >::type,
 						typename = typename std::enable_if< std::is_integral<IndexType>::value && std::is_unsigned<IndexType>::value, IndexType >::type >
-			static inline void compute_gradient(const DifferentiableCost& cost,const Eigen::MatrixBase<DERIVED>& x, Eigen::MatrixBase<DERIVED_2>& gradient, const GradientOption< DifferentiationMode::NUMERICAL_FORWARD, typename DERIVED::Scalar, IndexType >& options = GradientOption< DifferentiationMode::NUMERICAL_FORWARD, typename DERIVED::Scalar, IndexType >() ){
+			static inline void compute_gradient(const DifferentiableCost& cost,const Eigen::MatrixBase<DERIVED>& x, Eigen::MatrixBase<DERIVED_2>& gradient, const GradientOption< DifferentiationMode::STOCHASTIC, typename DERIVED::Scalar, IndexType >& options = GradientOption< DifferentiationMode::STOCHASTIC, typename DERIVED::Scalar, IndexType >() ){
 				cost.compute_stochastic_gradient(x,gradient,options.to_sample);
 			}
 		};

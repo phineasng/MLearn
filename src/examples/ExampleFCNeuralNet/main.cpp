@@ -21,25 +21,25 @@ int main(int argc, char* argv[]){
 
 	// Setting layers
 	MLVector<uint> layers(N_layers);
-	layers << 1000,500,600;
+	layers << 30,15,30;
 
 	// Activation types
 	constexpr ActivationType hidden_act = ActivationType::LOGISTIC;
-	constexpr ActivationType output_act = ActivationType::LINEAR;
+	constexpr ActivationType output_act = ActivationType::LOGISTIC;
 
 	// Loss and regularization type
 	constexpr LossType loss = LossType::L2_SQUARED;
-	constexpr Regularizer reg = Regularizer::L1;
+	constexpr Regularizer reg = Regularizer::L2;
 
 	// Generate dataset 
-	//srand((unsigned int) time(0));
-	MLMatrix<double> samples = MLMatrix<double>::Random(1000,100);
-	//srand((unsigned int) time(0));
-	MLMatrix<double> outputs = MLMatrix<double>::Random(600,100);
+	srand((unsigned int) time(0));
+	MLMatrix<double> samples = 10*MLMatrix<double>::Random(30,20);
+	srand((unsigned int) time(0));
+	MLMatrix<double> outputs = MLMatrix<double>::Random(30,20);
 
 	// Set some random weights
-	//srand((unsigned int) time(0));
-	MLVector<double> weights = MLVector<double>::Random( layers.head(N_layers-1).dot(layers.tail(N_layers-1)) + layers.tail(N_layers-1).array().sum() );
+	srand((unsigned int) time(0));
+	MLVector<double> weights = 5*MLVector<double>::Random( layers.head(N_layers-1).dot(layers.tail(N_layers-1)) + layers.tail(N_layers-1).array().sum() );
 	MLVector<double> gradient_pre_allocation(weights.size());
 	MLVector<double> gradient(weights.size());
 	MLVector<double> gradient_numerical(weights.size());
@@ -48,24 +48,23 @@ int main(int argc, char* argv[]){
 	FCNetsExplorer<double,uint,hidden_act,output_act> explorer(layers);
 
 	// Allocate some supporting memory
-	MLVector<double> grad_output(7);
+	MLVector<double> grad_output(30);
 
 	// Set Regularization options
 	RegularizerOptions<double> options;
-	Optimization::GradientOption<Optimization::DifferentiationMode::NUMERICAL_FORWARD,double,uint> options_numeric(1e-7);
-
+	Optimization::GradientOption<Optimization::DifferentiationMode::NUMERICAL_CENTRAL,double,uint> options_numeric(1e-7);
+	
 	// Build cost function
-	TEMPLATED_FC_NEURAL_NET_COST_CONSTRUCTION( loss,reg,layers,samples,outputs,explorer,options,grad_output,gradient_pre_allocation,cost);
+	TEMPLATED_FC_NEURAL_NET_COST_CONSTRUCTION( loss,reg,layers,samples_reduced,outputs_reduced,explorer,options,grad_output,gradient_pre_allocation,cost);
 
 	cost.compute_gradient<Optimization::DifferentiationMode::ANALYTICAL>(weights,gradient);
 
 	// Gradient check
-	//cost.compute_gradient<Optimization::DifferentiationMode::NUMERICAL_FORWARD>(weights,gradient_numerical,options_numeric);
+	cost.compute_gradient<Optimization::DifferentiationMode::NUMERICAL_CENTRAL>(weights,gradient_numerical,options_numeric);
+	std::cout << "diff = " << std::endl << (gradient-gradient_numerical) << std::endl << std::endl;
+	std::cout << "Norm diff = " << (gradient-gradient_numerical).norm()/gradient.norm() << ", Max diff = "<< (gradient-gradient_numerical).array().abs().maxCoeff() << std::endl;
 
-	//std::cout << "diff = " << std::endl << (gradient-gradient_numerical) << std::endl << std::endl;
-	//std::cout << "Norm diff = " << (gradient-gradient_numerical).squaredNorm()/gradient.squaredNorm() << std::endl;
-
-	Optimization::GradientDescent<Optimization::DifferentiationMode::ANALYTICAL,LineSearchStrategy::FIXED,double,uint,2> minimizer;
+	Optimization::GradientDescent<Optimization::DifferentiationMode::ANALYTICAL,LineSearchStrategy::BACKTRACKING,double,uint,2> minimizer;
 	minimizer.minimize(cost,weights);
 
  	return 0;

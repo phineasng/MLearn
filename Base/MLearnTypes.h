@@ -17,7 +17,7 @@ namespace MLearn{
 
 	// Matrix typedefs
 	template< typename ScalarType >
-	using MLMatrix = Eigen::Matrix< ScalarType, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor | Eigen::AutoAlign >;
+	using MLMatrix = Eigen::Matrix< ScalarType, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor | Eigen::AutoAlign >;
 	typedef MLMatrix< double > 		MLMatrixd;
 	typedef MLMatrix< float >   	MLMatrixf;
 	typedef MLMatrix< short >  		MLMatrixs;
@@ -27,13 +27,13 @@ namespace MLearn{
 
 	// Matrix typedefs (col majors)   
 	template< typename ScalarType >
-	using MLMatrixColMajor = Eigen::Matrix< ScalarType, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor | Eigen::AutoAlign >;
-	typedef MLMatrixColMajor< double > 		MLMatrixColMajord;
-	typedef MLMatrixColMajor< float >   	MLMatrixColMajorf;
-	typedef MLMatrixColMajor< short >  		MLMatrixColMajors;
-	typedef MLMatrixColMajor< int >  		MLMatrixColMajori;
-	typedef MLMatrixColMajor< long >  		MLMatrixColMajorl;
-	typedef MLMatrixColMajor< long long > 	MLMatrixColMajorll;   
+	using MLMatrixRowMajor = Eigen::Matrix< ScalarType, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor | Eigen::AutoAlign >;
+	typedef MLMatrixRowMajor< double > 		MLMatrixRowMajord;
+	typedef MLMatrixRowMajor< float >   	MLMatrixRowMajorf;
+	typedef MLMatrixRowMajor< short >  		MLMatrixRowMajors;
+	typedef MLMatrixRowMajor< int >  		MLMatrixRowMajori;
+	typedef MLMatrixRowMajor< long >  		MLMatrixRowMajorl;
+	typedef MLMatrixRowMajor< long long > 	MLMatrixRowMajorll;   
 
 	// Vector typedefs
 	template< typename ScalarType >

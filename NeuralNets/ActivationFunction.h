@@ -13,6 +13,7 @@ namespace MLearn{
 		enum class ActivationType{
 			STEP,
 			LINEAR,
+			RECTIFIER,
 			LOGISTIC,
 			HYPER_TAN
 		};
@@ -88,6 +89,36 @@ namespace MLearn{
 						typename = typename std::enable_if< (std::is_floating_point<ScalarType>::value && std::is_signed<ScalarType>::value), void >::type >
 			static ScalarType first_derivative( ScalarType x ){
 				return ScalarType(1);
+			}
+
+			template< 	typename ScalarType,
+						typename = typename std::enable_if< (std::is_floating_point<ScalarType>::value && std::is_signed<ScalarType>::value), void >::type >
+			static ScalarType second_derivative( ScalarType x ){
+				return ScalarType(0);
+			}
+
+		};
+
+		template<>
+		class ActivationFunction<ActivationType::RECTIFIER> {
+		public:
+
+			template< 	typename ScalarType,
+						typename = typename std::enable_if< (std::is_floating_point<ScalarType>::value && std::is_signed<ScalarType>::value), void >::type >
+			static ScalarType evaluate( ScalarType x ){
+				if ( x > ScalarType(0) )
+					return x;
+				else
+					return ScalarType(0);
+			}
+
+			template< 	typename ScalarType,
+						typename = typename std::enable_if< (std::is_floating_point<ScalarType>::value && std::is_signed<ScalarType>::value), void >::type >
+			static ScalarType first_derivative( ScalarType x ){
+				if ( x > ScalarType(0) )
+					return ScalarType(1);
+				else
+					return ScalarType(0);
 			}
 
 			template< 	typename ScalarType,

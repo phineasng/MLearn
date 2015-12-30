@@ -206,7 +206,7 @@ namespace MLearn{
 					net_explorer(refExplorer),
 					grad_output(ref_allocated_grad_output),
 					gradient_tmp(ref_allocated_grad){
-						MLEARN_ASSERT( refInputs.cols() == refOutputs.cols(), "Inputs and corresponding outputs have to be the same number!" )
+						MLEARN_ASSERT( refInputs.cols() == refOutputs.cols(), "Inputs and corresponding outputs have to be the same number!" );
 					}
 				// evaluation
 				template < 	typename INNER_DERIVED,
@@ -242,6 +242,27 @@ namespace MLearn{
 						gradient += gradient_tmp;
 					}
 					gradient /= inputs.cols();
+					// L1 or L2 regularization
+					Regulator< ((R & Regularizer::L1) == Regularizer::L1) || ((R & Regularizer::L2) == Regularizer::L2) >::template apply_to_gradient<IndexType,R>( layers, x, gradient, options );
+
+				}
+				// stochastic gradient
+				template < 	typename INNER_IndexType,
+							typename INNER_DERIVED,
+							typename INNER_DERIVED_2,
+							typename = typename std::enable_if< std::is_same<typename INNER_DERIVED::Scalar,typename DERIVED::Scalar>::value , typename INNER_DERIVED::Scalar >::type,
+							typename = typename std::enable_if< std::is_same<typename INNER_DERIVED::Scalar,typename INNER_DERIVED_2::Scalar>::value , typename INNER_DERIVED::Scalar >::type,
+							typename = typename std::enable_if< INNER_DERIVED::ColsAtCompileTime == 1, INNER_DERIVED >::type,
+							typename = typename std::enable_if< INNER_DERIVED_2::ColsAtCompileTime == 1, INNER_DERIVED_2 >::type >
+				void compute_stochastic_gradient( const Eigen::MatrixBase<INNER_DERIVED>& x, Eigen::MatrixBase< INNER_DERIVED_2 >& gradient, const MLVector<INNER_IndexType>& indeces ) const{
+					gradient = Eigen::MatrixBase< INNER_DERIVED_2 >::Zero(gradient.size());
+					gradient_tmp = gradient;
+
+					for ( decltype(indeces.size()) idx = 0; idx < indeces.size(); ++idx ){
+						compute_gradient_on_sample(x,gradient_tmp,indeces[idx]);
+						gradient += gradient_tmp;
+					}
+					gradient /= indeces.size();
 					// L1 or L2 regularization
 					Regulator< ((R & Regularizer::L1) == Regularizer::L1) || ((R & Regularizer::L2) == Regularizer::L2) >::template apply_to_gradient<IndexType,R>( layers, x, gradient, options );
 

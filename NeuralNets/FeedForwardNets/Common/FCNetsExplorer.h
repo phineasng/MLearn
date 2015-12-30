@@ -35,6 +35,9 @@ namespace MLearn{
 							typename DERIVED_BOOL,
 							typename = typename std::enable_if< std::is_floating_point<WeightType>::value , WeightType >::type >
 				static inline void process_derivatives( MLVector<WeightType> derivatives ,Eigen::VectorBlock<DERIVED_BOOL> dropped){}
+				template < 	typename DERIVED,
+							typename = typename std::enable_if< std::is_floating_point<typename DERIVED::Scalar>::value , typename DERIVED::Scalar >::type >
+				static inline void scale_gradient( Eigen::MatrixBase<DERIVED>& gradient, typename DERIVED::Scalar p ){}
 			};
 			template <>
 			struct UnitProcessor<true>{
@@ -65,6 +68,11 @@ namespace MLearn{
 							derivatives[idx] = WeightType(0);
 						}
 					}
+				}
+				template < 	typename DERIVED,
+							typename = typename std::enable_if< std::is_floating_point<typename DERIVED::Scalar>::value , typename DERIVED::Scalar >::type >
+				static inline void scale_gradient( Eigen::MatrixBase<DERIVED>& gradient, typename DERIVED::Scalar p ){
+					gradient *= p;
 				}
 			};
 
@@ -143,7 +151,10 @@ namespace MLearn{
 					
 					pre_activations.segment(0,layers[0]) = input;
 					UnitProcessor<DROPOUT>::template process<ActivationType::LINEAR,WeightType,RNG_TYPE>(pre_activations.segment(0,layers[0]),activations.segment(0,layers[0]),dropped.segment(0,layers[0]),rng,b_dist);
-
+					
+					// declare refs to derived: if DERIVED_* are expressions then they will be evaluated otherwise we can access its data without copies
+					const Eigen::Ref<const Eigen::Matrix< typename DERIVED::Scalar, DERIVED::RowsAtCompileTime, DERIVED::ColsAtCompileTime > >& ref_weights(weights);
+					
 					decltype(activations.size()) offset = layers[0];
 					decltype(weights.size()) offset_weights = 0;
 					decltype(weights.size()) tmp;
@@ -154,9 +165,9 @@ namespace MLearn{
 
 						idx_m1 = idx - 1;
 						tmp = layers[idx_m1]*layers[idx];
-						pre_activations.segment(offset,layers[idx]) = Eigen::Map<const MLMatrix<WeightType>>( weights.segment(offset_weights,tmp).data(), layers[idx], layers[idx_m1] )*activations.segment(offset-layers[idx_m1],layers[idx_m1]);
+						pre_activations.segment(offset,layers[idx]) = Eigen::Map<const MLMatrix<WeightType>>( ref_weights.data() + offset_weights, layers[idx], layers[idx_m1] )*activations.segment(offset-layers[idx_m1],layers[idx_m1]);
 						offset_weights += tmp;
-						pre_activations.segment(offset,layers[idx]) += weights.segment(offset_weights,layers[idx]);	
+						pre_activations.segment(offset,layers[idx]) += ref_weights.segment(offset_weights,layers[idx]);	
 						UnitProcessor<DROPOUT>::template process<HiddenLayerActivation,WeightType,RNG_TYPE>(pre_activations.segment(offset,layers[idx]),activations.segment(offset,layers[idx]),dropped.segment(offset,layers[idx]),rng,b_dist);
 						offset_weights += layers[idx];
 						offset += layers[idx];  
@@ -164,7 +175,7 @@ namespace MLearn{
 					
 					idx_m1 = idx - 1;
 					tmp = layers[idx_m1]*layers[idx];
-					pre_activations.segment(offset,layers[idx]) = Eigen::Map<const MLMatrix<WeightType>>( weights.segment(offset_weights,tmp).data(), layers[idx], layers[idx_m1] )*activations.segment(offset-layers[idx_m1],layers[idx_m1]);
+					pre_activations.segment(offset,layers[idx]) = Eigen::Map<const MLMatrix<WeightType>>( ref_weights.data() + offset_weights, layers[idx], layers[idx_m1] )*activations.segment(offset-layers[idx_m1],layers[idx_m1]);
 					offset_weights += tmp;
 					pre_activations.segment(offset,layers[idx]) += weights.segment(offset_weights,layers[idx]);	
 					activations.segment(offset,layers[idx]) = pre_activations.segment(offset,layers[idx]).unaryExpr(std::pointer_to_unary_function<WeightType,WeightType>(ActivationFunction<OutputLayerActivation>::evaluate));
@@ -189,12 +200,15 @@ namespace MLearn{
 					MLEARN_ASSERT( ( layers.head(layers.size()-1).dot(layers.tail(layers.size()-1)) + layers.tail(layers.size()-1).array().sum()) == weights.size(), "Number of weights is not consistent with number of units in the layers!" );
 					MLEARN_ASSERT( gradient_output.size() == layers[layers.size()-1], "Output layer not consistent with the given gradient!" );
 					MLEARN_ASSERT( gradient_weights.size() == weights.size(), "Weights size and respective gradient size not compatible!" );
-				
+
+					// declare refs to derived: if DERIVED_* are expressions then they will be evaluated otherwise we can access its data without copies
+					const Eigen::Ref<const Eigen::Matrix< typename DERIVED::Scalar, DERIVED::RowsAtCompileTime, DERIVED::ColsAtCompileTime > >& ref_weights(weights);
+					
 					decltype(activations.size()) idx = layers.size()-1;
 					decltype(activations.size()) idx_m1 = idx-1;
 					decltype(activations.size()) offset = layers.head(idx).array().sum();
-					decltype(weights.size()) offset_weights = weights.size() - layers[idx];
-					decltype(weights.size()) tmp = layers[idx_m1]*layers[idx];
+					decltype(ref_weights.size()) offset_weights = ref_weights.size() - layers[idx];
+					decltype(ref_weights.size()) tmp = layers[idx_m1]*layers[idx];
 
 					// compute delta output layer and assign it to the gradientof the last biases
 					ActivationDerivativeWrapper<OutputLayerActivation>::template derive<WeightType>( pre_activations.segment(offset,layers[idx]),activations.segment(offset,layers[idx]),derivatives );
@@ -208,7 +222,7 @@ namespace MLearn{
 					
 					// get appropriate view of the weight matrices
 					Eigen::Map<MLMatrix<WeightType>> diff_weight_matrix(gradient_weights.segment(offset_weights,tmp).data(),layers[idx],layers[idx_m1]);
-					Eigen::Map<const MLMatrix<WeightType>> weight_matrix(weights.segment(offset_weights,tmp).data(),layers[idx],layers[idx_m1]);
+					Eigen::Map<const MLMatrix<WeightType>> weight_matrix(ref_weights.data()+offset_weights,layers[idx],layers[idx_m1]);
 					
 					// update gradient of last weight matrix
 					diff_weight_matrix.noalias() = delta_p1*activations.segment(offset,layers[idx_m1]).transpose();
@@ -232,12 +246,13 @@ namespace MLearn{
 						offset -= layers[idx_m1];
 
 						new (&diff_weight_matrix) Eigen::Map<MLMatrix<WeightType>> (gradient_weights.segment(offset_weights,tmp).data(),layers[idx],layers[idx_m1]);
-						new (&weight_matrix) Eigen::Map<const MLMatrix<WeightType>> (weights.segment(offset_weights,tmp).data(),layers[idx],layers[idx_m1]);
+						new (&weight_matrix) Eigen::Map<const MLMatrix<WeightType>> (ref_weights.data()+offset_weights,layers[idx],layers[idx_m1]);
 
 						diff_weight_matrix.noalias() = delta_p1*activations.segment(offset,layers[idx_m1]).transpose();
 						
 					}
 
+					UnitProcessor<DROPOUT>::template scale_gradient(gradient_weights,b_dist.p());
 				}
 				// MODIFIERS
 				void setDropoutProbability( WeightType prob ){

@@ -23,11 +23,11 @@ namespace MLearn{
 		template < 	LineSearchStrategy STRATEGY = LineSearchStrategy::FIXED,
 					typename ScalarType = double,
 					typename UnsignedIntegerType = uint,
-					ushort VERBOSITY_REF = 0,
-					typename = typename std::enable_if< std::is_floating_point<ScalarType>::value, void >::type,
-					typename = typename std::enable_if< std::is_integral<UnsignedIntegerType>::value && std::is_unsigned<UnsignedIntegerType>::value, void >::type >
+					ushort VERBOSITY_REF = 0 >
 		class StochasticGradientDescent{
 		private:
+			static_assert(std::is_floating_point<ScalarType>::value,"The scalar type has to be floating point!");
+			static_assert(std::is_integral<UnsignedIntegerType>::value && std::is_unsigned<UnsignedIntegerType>::value,"An unsigned integer type is required!");
 			typedef std::mt19937 RNG_TYPE;
 			typedef std::uniform_int_distribution<UnsignedIntegerType> DIST_TYPE;
 		public:
@@ -55,9 +55,9 @@ namespace MLearn{
 			UnsignedIntegerType getSizeBatch() const { return size_batch; }
 			// Minimize
 			template < 	typename Cost,
-						typename DERIVED,
-						typename = typename std::enable_if< std::is_same<typename DERIVED::Scalar, ScalarType >::value,typename DERIVED::Scalar >::type >
+						typename DERIVED >
 			void minimize( const Cost& cost, Eigen::MatrixBase<DERIVED>& x ){
+				static_assert(std::is_same<typename DERIVED::Scalar, ScalarType >::value, "Input vector has to be the same type declared in the minimizer!");
 				MLVector< ScalarType > gradient(x.size());
 				to_sample.resize( size_batch );
 

@@ -25,12 +25,12 @@ namespace MLearn{
 					LineSearchStrategy STRATEGY = LineSearchStrategy::BACKTRACKING,
 					typename ScalarType = double,
 					typename UnsignedIntegerType = uint,
-					ushort VERBOSITY_REF = 0,
-					typename = typename std::enable_if< std::is_floating_point<ScalarType>::value, void >::type,
-					typename = typename std::enable_if< std::is_integral<UnsignedIntegerType>::value && std::is_unsigned<UnsignedIntegerType>::value, void >::type,
-					typename = typename std::enable_if< MODE != DifferentiationMode::STOCHASTIC, void >::type >
+					ushort VERBOSITY_REF = 0u >
 		class BFGS{
 		public:
+			static_assert(std::is_floating_point<ScalarType>::value,"The scalar type has to be floating point!");
+			static_assert(std::is_integral<UnsignedIntegerType>::value && std::is_unsigned<UnsignedIntegerType>::value,"An unsigned integer type is required!");
+			static_assert(MODE != DifferentiationMode::STOCHASTIC,"Method not compatible with stochastic gradient!");
 			// Constructors
 			BFGS() = default;
 			BFGS( const BFGS<MODE,STRATEGY,ScalarType,UnsignedIntegerType,VERBOSITY_REF>& refBFGS ): gradient_options(refBFGS.gradient_options), tolerance(refBFGS.tolerance), max_iter(refBFGS.max_iter), line_search(refBFGS.line_search), hessian_approx(refBFGS.hessian_approx), initialize_hessian(refBFGS.initialize_hessian) {}
@@ -57,10 +57,9 @@ namespace MLearn{
 			bool getHessianDummyInitialization() const { return initialize_hessian; }
 			// Minimize
 			template < 	typename Cost,
-						typename DERIVED,
-						typename = typename std::enable_if< std::is_same<typename DERIVED::Scalar, ScalarType >::value,typename DERIVED::Scalar >::type >
+						typename DERIVED >
 			void minimize( const Cost& cost, Eigen::MatrixBase<DERIVED>& x ){
-				
+				static_assert(std::is_same<typename DERIVED::Scalar, ScalarType >::value, "The scalar type of the vector has to be the same as the one declared for the minimizer!");
 				// Initialization
 				if (initialize_hessian){
 					hessian_approx = MLMatrix<ScalarType>::Identity(x.size(),x.size());

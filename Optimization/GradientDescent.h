@@ -23,12 +23,12 @@ namespace MLearn{
 					LineSearchStrategy STRATEGY = LineSearchStrategy::FIXED,
 					typename ScalarType = double,
 					typename UnsignedIntegerType = uint,
-					ushort VERBOSITY_REF = 0,
-					typename = typename std::enable_if< std::is_floating_point<ScalarType>::value, void >::type,
-					typename = typename std::enable_if< std::is_integral<UnsignedIntegerType>::value && std::is_unsigned<UnsignedIntegerType>::value, void >::type,
-					typename = typename std::enable_if< MODE != DifferentiationMode::STOCHASTIC, void >::type >
+					ushort VERBOSITY_REF = 0 >
 		class GradientDescent{
 		public:
+			static_assert(std::is_floating_point<ScalarType>::value,"The scalar type has to be floating point!");
+			static_assert(std::is_integral<UnsignedIntegerType>::value && std::is_unsigned<UnsignedIntegerType>::value,"An unsigned integer type is required!");
+			static_assert(MODE != DifferentiationMode::STOCHASTIC,"Method not compatible with stochastic gradient!");
 			// Constructors
 			GradientDescent() = default;
 			GradientDescent( const GradientDescent<MODE,STRATEGY,ScalarType,UnsignedIntegerType,VERBOSITY_REF>& refGradient ): gradient_options(refGradient.gradient_options), tolerance(refGradient.tolerance), max_iter(refGradient.max_iter), line_search(refGradient.line_search) {}
@@ -50,9 +50,9 @@ namespace MLearn{
 			UnsignedIntegerType getMaxIter() const { return max_iter; }
 			// Minimize
 			template < 	typename Cost,
-						typename DERIVED,
-						typename = typename std::enable_if< std::is_same<typename DERIVED::Scalar, ScalarType >::value,typename DERIVED::Scalar >::type >
+						typename DERIVED >
 			void minimize( const Cost& cost, Eigen::MatrixBase<DERIVED>& x ){
+				static_assert(std::is_same<typename DERIVED::Scalar, ScalarType >::value, "The scalar type of the vector has to be the same as the one declared for the minimizer!");
 				MLVector< ScalarType > gradient(x.size());
 				cost.compute_gradient(x,gradient,gradient_options);
 				ScalarType sqTolerance = tolerance*tolerance;

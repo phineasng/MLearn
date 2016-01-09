@@ -26,18 +26,15 @@ namespace MLearn{
 							typename WeightType,
 							typename RNG,
 							typename DERIVED,
-							typename DERIVED_BOOL,
-							typename = typename std::enable_if< std::is_floating_point<WeightType>::value , WeightType >::type >
-				static inline void process( Eigen::VectorBlock<DERIVED> pre_activations, Eigen::VectorBlock<DERIVED> activations, Eigen::VectorBlock<DERIVED_BOOL> dropped, RNG& rng, std::bernoulli_distribution& b_dist ){
+							typename DERIVED_BOOL >
+				static inline void process( Eigen::VectorBlock<DERIVED> pre_activations, Eigen::VectorBlock<DERIVED> activations, Eigen::VectorBlock<DERIVED_BOOL> dropped, RNG& rng, std::bernoulli_distribution& b_dist, const WeightType& inv_p  ){
+					static_assert( std::is_floating_point<typename DERIVED::Scalar>::value,"The scalar type has to be floating point!");
+					static_assert( std::is_floating_point<WeightType>::value,"The declared scalar type and the scalar type of the input vector have to be the same!");
 					activations = pre_activations.unaryExpr(std::pointer_to_unary_function<WeightType,WeightType>(ActivationFunction<TYPE>::evaluate));
 				}
 				template < 	typename WeightType,
-							typename DERIVED_BOOL,
-							typename = typename std::enable_if< std::is_floating_point<WeightType>::value , WeightType >::type >
-				static inline void process_derivatives( MLVector<WeightType> derivatives ,Eigen::VectorBlock<DERIVED_BOOL> dropped){}
-				template < 	typename DERIVED,
-							typename = typename std::enable_if< std::is_floating_point<typename DERIVED::Scalar>::value , typename DERIVED::Scalar >::type >
-				static inline void scale_gradient( Eigen::MatrixBase<DERIVED>& gradient, typename DERIVED::Scalar p ){}
+							typename DERIVED_BOOL >
+				static inline void process_derivatives( MLVector<WeightType>& derivatives ,Eigen::VectorBlock<DERIVED_BOOL> dropped){static_assert( std::is_floating_point<WeightType>::value,"The scalar type has to be floating point!");}
 			};
 			template <>
 			struct UnitProcessor<true>{
@@ -45,34 +42,30 @@ namespace MLearn{
 							typename WeightType,
 							typename RNG,
 							typename DERIVED,
-							typename DERIVED_BOOL,
-							typename = typename std::enable_if< std::is_floating_point<WeightType>::value , WeightType >::type >
-				static inline void process( Eigen::VectorBlock<DERIVED> pre_activations, Eigen::VectorBlock<DERIVED> activations, Eigen::VectorBlock<DERIVED_BOOL> dropped, RNG& rng, std::bernoulli_distribution& b_dist ){
+							typename DERIVED_BOOL >
+				static inline void process( Eigen::VectorBlock<DERIVED> pre_activations, Eigen::VectorBlock<DERIVED> activations, Eigen::VectorBlock<DERIVED_BOOL> dropped, RNG& rng, std::bernoulli_distribution& b_dist, const WeightType& inv_p ){
+					static_assert( std::is_floating_point<typename DERIVED::Scalar>::value,"The scalar type has to be floating point!");
+					static_assert( std::is_floating_point<WeightType>::value,"The declared scalar type and the scalar type of the input vector have to be the same!");
 					for ( decltype(activations.size()) idx = 0; idx < activations.size(); ++idx ){
 						if ( b_dist(rng) ){
+							activations[idx] = ActivationFunction<TYPE>::evaluate(pre_activations[idx])*inv_p;
+							dropped[idx] = false;
+						}else{
 							activations[idx] = WeightType(0);
 							pre_activations[idx] = WeightType(0);
 							dropped[idx] = true;
-						}else{
-							activations[idx] = ActivationFunction<TYPE>::evaluate(pre_activations[idx]);
-							dropped[idx] = false;
 						}
 					}
 				}
 				template < 	typename WeightType,
-							typename DERIVED_BOOL,
-							typename = typename std::enable_if< std::is_floating_point<WeightType>::value , WeightType >::type >
-				static inline void process_derivatives( MLVector<WeightType> derivatives ,Eigen::VectorBlock<DERIVED_BOOL> dropped){
+							typename DERIVED_BOOL >
+				static inline void process_derivatives( MLVector<WeightType>& derivatives ,Eigen::VectorBlock<DERIVED_BOOL> dropped){
+					static_assert( std::is_floating_point<WeightType>::value,"The scalar type has to be floating point!");
 					for ( decltype(derivatives.size()) idx = 0; idx < derivatives.size(); ++idx ){
 						if ( dropped[idx] ){
 							derivatives[idx] = WeightType(0);
 						}
 					}
-				}
-				template < 	typename DERIVED,
-							typename = typename std::enable_if< std::is_floating_point<typename DERIVED::Scalar>::value , typename DERIVED::Scalar >::type >
-				static inline void scale_gradient( Eigen::MatrixBase<DERIVED>& gradient, typename DERIVED::Scalar p ){
-					gradient *= p;
 				}
 			};
 
@@ -87,19 +80,17 @@ namespace MLearn{
 			*/
 			template < ActivationType TYPE >
 			struct ActivationDerivativeWrapper{
-				template < 	typename WeightType,
-							typename DERIVED,
-							typename = typename std::enable_if< std::is_floating_point<WeightType>::value , WeightType >::type >
-				static inline void derive( Eigen::VectorBlock<DERIVED> pre_activations, Eigen::VectorBlock<DERIVED> activations, MLVector<WeightType>& derivatives ){
-					derivatives = pre_activations.unaryExpr(std::pointer_to_unary_function<WeightType,WeightType>(ActivationFunction<TYPE>::first_derivative));
+				template < 	typename DERIVED >
+				static inline void derive( Eigen::VectorBlock<DERIVED> pre_activations, Eigen::VectorBlock<DERIVED> activations, MLVector<typename DERIVED::Scalar>& derivatives ){
+					static_assert( std::is_floating_point<typename DERIVED::Scalar>::value,"The scalar type has to be floating point!");
+					derivatives = pre_activations.unaryExpr(std::pointer_to_unary_function<typename DERIVED::Scalar,typename DERIVED::Scalar>(ActivationFunction<TYPE>::first_derivative));
 				}
 			};
 			template <>
 			struct ActivationDerivativeWrapper<ActivationType::LOGISTIC>{
-				template < 	typename WeightType,
-							typename DERIVED,
-							typename = typename std::enable_if< std::is_floating_point<WeightType>::value , WeightType >::type >
-				static inline void derive( Eigen::VectorBlock<DERIVED> pre_activations, Eigen::VectorBlock<DERIVED> activations, MLVector<WeightType>& derivatives ){
+				template < 	typename DERIVED >
+				static inline void derive( Eigen::VectorBlock<DERIVED> pre_activations, Eigen::VectorBlock<DERIVED> activations, MLVector<typename DERIVED::Scalar>& derivatives ){
+					static_assert( std::is_floating_point<typename DERIVED::Scalar>::value,"The scalar type has to be floating point!");
 					derivatives = activations - activations.cwiseProduct(activations);
 				}
 			};
@@ -116,11 +107,11 @@ namespace MLearn{
 			template < 	typename WeightType, 
 						typename IndexType,
 						ActivationType HiddenLayerActivation = ActivationType::LOGISTIC,
-						ActivationType OutputLayerActivation = ActivationType::LINEAR,
-						typename = typename std::enable_if< std::is_floating_point<WeightType>::value , WeightType >::type,
-						typename = typename std::enable_if< std::is_integral<IndexType>::value && std::is_unsigned<IndexType>::value , IndexType >::type >
+						ActivationType OutputLayerActivation = ActivationType::LINEAR >
 			class FCNetsExplorer{
 			public:
+				static_assert( std::is_floating_point<WeightType>::value, "The weights type has to be floating point!" );
+				static_assert( std::is_integral<IndexType>::value && std::is_unsigned<IndexType>::value, "The index type has to be integer and unsigned!" );
 				// TYPEDEFS
 				typedef WeightType 	Scalar_T;
 				typedef IndexType 	Index_T;
@@ -136,21 +127,21 @@ namespace MLearn{
 					b_dist(0.5) {
 						MLEARN_ASSERT( layers.size() > 2, "Not a deep architecture: at least 1 hidden layer is needed for the algorithm to work!" );
 						MLEARN_WARNING( ( layers.array() > 0 ).all(), "Some layers have zero units!" );
+						inv_p = WeightType(1)/b_dist.p();
 					}
 				// FORWARD PASS
 				template< 	bool DROPOUT = false,
 							typename DERIVED,
-							typename DERIVED_2,
-							typename = typename std::enable_if< std::is_same<typename DERIVED::Scalar,typename DERIVED_2::Scalar>::value , typename DERIVED::Scalar >::type,
-							typename = typename std::enable_if< std::is_same<typename DERIVED::Scalar,WeightType>::value , typename DERIVED::Scalar >::type,
-							typename = typename std::enable_if< DERIVED::ColsAtCompileTime == 1, DERIVED >::type,
-							typename = typename std::enable_if< DERIVED_2::ColsAtCompileTime == 1, DERIVED_2 >::type >
+							typename DERIVED_2 >
 				void forwardpass( const Eigen::MatrixBase< DERIVED >& weights, const Eigen::MatrixBase< DERIVED_2 >& input ){
+					static_assert( std::is_same<typename DERIVED::Scalar,typename DERIVED_2::Scalar >::value, "The vectors given as input has to have same scalar type!" );
+					static_assert( std::is_same<typename DERIVED::Scalar,WeightType >::value, "The vectors' scalar type has to be consistent to the declared weight type!" );
+					static_assert( (DERIVED::ColsAtCompileTime == 1) && (DERIVED_2::ColsAtCompileTime == 1), "The inputs have to be column vectors (or consistent structures)!");
 					MLEARN_ASSERT( ( layers.head(layers.size()-1).dot(layers.tail(layers.size()-1)) + layers.tail(layers.size()-1).array().sum()) == weights.size(), "Number of weights is not consistent with number of units in the layers!" );
 					MLEARN_ASSERT( input.size() == layers[0] , "Input should be of the declared size of the first layer!" );
 					
 					pre_activations.segment(0,layers[0]) = input;
-					UnitProcessor<DROPOUT>::template process<ActivationType::LINEAR,WeightType,RNG_TYPE>(pre_activations.segment(0,layers[0]),activations.segment(0,layers[0]),dropped.segment(0,layers[0]),rng,b_dist);
+					UnitProcessor<DROPOUT>::template process<ActivationType::LINEAR,WeightType,RNG_TYPE>(pre_activations.segment(0,layers[0]),activations.segment(0,layers[0]),dropped.segment(0,layers[0]),rng,b_dist,inv_p);
 					
 					// declare refs to derived: if DERIVED_* are expressions then they will be evaluated otherwise we can access its data without copies
 					const Eigen::Ref<const Eigen::Matrix< typename DERIVED::Scalar, DERIVED::RowsAtCompileTime, DERIVED::ColsAtCompileTime > >& ref_weights(weights);
@@ -168,7 +159,7 @@ namespace MLearn{
 						pre_activations.segment(offset,layers[idx]) = Eigen::Map<const MLMatrix<WeightType>>( ref_weights.data() + offset_weights, layers[idx], layers[idx_m1] )*activations.segment(offset-layers[idx_m1],layers[idx_m1]);
 						offset_weights += tmp;
 						pre_activations.segment(offset,layers[idx]) += ref_weights.segment(offset_weights,layers[idx]);	
-						UnitProcessor<DROPOUT>::template process<HiddenLayerActivation,WeightType,RNG_TYPE>(pre_activations.segment(offset,layers[idx]),activations.segment(offset,layers[idx]),dropped.segment(offset,layers[idx]),rng,b_dist);
+						UnitProcessor<DROPOUT>::template process<HiddenLayerActivation,WeightType,RNG_TYPE>(pre_activations.segment(offset,layers[idx]),activations.segment(offset,layers[idx]),dropped.segment(offset,layers[idx]),rng,b_dist,inv_p);
 						offset_weights += layers[idx];
 						offset += layers[idx];  
 					}
@@ -189,14 +180,11 @@ namespace MLearn{
 				template< 	bool DROPOUT = false, 
 							typename DERIVED,
 							typename DERIVED_2,
-							typename DERIVED_3,
-							typename = typename std::enable_if< std::is_same<typename DERIVED::Scalar,typename DERIVED_2::Scalar>::value , typename DERIVED::Scalar >::type,
-							typename = typename std::enable_if< std::is_same<typename DERIVED::Scalar,WeightType>::value , typename DERIVED::Scalar >::type,
-							typename = typename std::enable_if< std::is_same<typename DERIVED::Scalar,typename DERIVED_3::Scalar>::value , typename DERIVED::Scalar >::type,
-							typename = typename std::enable_if< DERIVED::ColsAtCompileTime == 1, DERIVED >::type,
-							typename = typename std::enable_if< DERIVED_2::ColsAtCompileTime == 1, DERIVED_2 >::type,
-							typename = typename std::enable_if< DERIVED_3::ColsAtCompileTime == 1, DERIVED_3 >::type >
+							typename DERIVED_3 >
 				void backpropagate( const Eigen::MatrixBase<DERIVED>& weights, const Eigen::MatrixBase<DERIVED_2>& gradient_output, Eigen::MatrixBase<DERIVED_3>& gradient_weights ){
+					static_assert( std::is_same<typename DERIVED::Scalar,typename DERIVED_2::Scalar >::value && std::is_same<typename DERIVED::Scalar,typename DERIVED_3::Scalar >::value, "The vectors given as input has to have same scalar type!" );
+					static_assert( std::is_same<typename DERIVED::Scalar,WeightType >::value, "The vectors' scalar type has to be consistent to the declared weight type!" );
+					static_assert( (DERIVED::ColsAtCompileTime == 1) && (DERIVED_2::ColsAtCompileTime == 1) && (DERIVED_3::ColsAtCompileTime == 1), "The inputs have to be column vectors (or consistent structures)!");
 					MLEARN_ASSERT( ( layers.head(layers.size()-1).dot(layers.tail(layers.size()-1)) + layers.tail(layers.size()-1).array().sum()) == weights.size(), "Number of weights is not consistent with number of units in the layers!" );
 					MLEARN_ASSERT( gradient_output.size() == layers[layers.size()-1], "Output layer not consistent with the given gradient!" );
 					MLEARN_ASSERT( gradient_weights.size() == weights.size(), "Weights size and respective gradient size not compatible!" );
@@ -211,7 +199,7 @@ namespace MLearn{
 					decltype(ref_weights.size()) tmp = layers[idx_m1]*layers[idx];
 
 					// compute delta output layer and assign it to the gradientof the last biases
-					ActivationDerivativeWrapper<OutputLayerActivation>::template derive<WeightType>( pre_activations.segment(offset,layers[idx]),activations.segment(offset,layers[idx]),derivatives );
+					ActivationDerivativeWrapper<OutputLayerActivation>::derive( pre_activations.segment(offset,layers[idx]),activations.segment(offset,layers[idx]),derivatives );
 					gradient_weights.segment(offset_weights,layers[idx]) = gradient_output.cwiseProduct(derivatives);
 					// ... and get a view of the last delta
 					Eigen::Map< const MLVector<WeightType> > delta_p1( gradient_weights.segment(offset_weights,layers[idx]).data(), layers[idx] );
@@ -237,7 +225,7 @@ namespace MLearn{
 
 						tmp = layers[idx_m1]*layers[idx];
 
-						ActivationDerivativeWrapper<HiddenLayerActivation>::template derive<WeightType>( pre_activations.segment(offset,layers[idx]),activations.segment(offset,layers[idx]),derivatives );
+						ActivationDerivativeWrapper<HiddenLayerActivation>::derive( pre_activations.segment(offset,layers[idx]),activations.segment(offset,layers[idx]),derivatives );
 						UnitProcessor<DROPOUT>::template process_derivatives<WeightType>(derivatives,dropped.segment(offset,layers[idx]));
 						gradient_weights.segment(offset_weights,layers[idx]) = (weight_matrix.transpose()*delta_p1).cwiseProduct( derivatives );
 						new (&delta_p1) Eigen::Map< const MLVector<WeightType> >( gradient_weights.segment(offset_weights,layers[idx]).data(), layers[idx] );
@@ -252,11 +240,12 @@ namespace MLearn{
 						
 					}
 
-					UnitProcessor<DROPOUT>::template scale_gradient(gradient_weights,b_dist.p());
 				}
 				// MODIFIERS
 				void setDropoutProbability( WeightType prob ){
+					MLEARN_WARNING( ( (prob >= 0) && (prob <= 1) ), "Probability value not valid!"  );
 					b_dist.param( std::bernoulli_distribution::param_type(prob) );
+					inv_p = WeightType(1)/prob;
 				}
 				// UPDATE INTERNAL MODEL ( external modification of the layers )
 				void internal_resize(){
@@ -284,6 +273,7 @@ namespace MLearn{
 				MLVector<WeightType> derivatives;
 				RNG_TYPE rng;
 				std::bernoulli_distribution b_dist;
+				WeightType inv_p;
 			};
 
 		}

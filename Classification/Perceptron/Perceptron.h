@@ -27,10 +27,10 @@ namespace MLearn{
 		*
 		*/
 		template < 	typename WeightType, 
-					typename ClassType, 
-					typename = typename std::enable_if< std::is_floating_point<WeightType>::value , WeightType >::type,
-					typename = typename std::enable_if< std::is_integral<ClassType>::value && std::is_unsigned<ClassType>::value , ClassType >::type >
+					typename ClassType >
 		class Perceptron {
+			static_assert(std::is_floating_point<WeightType>::value,"The weights' type has to be floating point!");
+			static_assert(std::is_integral<ClassType>::value && std::is_unsigned<ClassType>::value,"The class type has to be unsigned integer!");
 		protected:
 			MLVector< WeightType > 	_weights;
 			WeightType 				_tolerance 			= 1e-5;
@@ -42,8 +42,8 @@ namespace MLearn{
 			// -- default: default construct everything
 			Perceptron() = default;
 			// -- integer argument: number of features (without accounting for the bias)
-			template< typename U_INT, typename = typename std::enable_if< std::is_integral< U_INT >::value && std::is_unsigned< U_INT >::value, U_INT>::type >
-			explicit Perceptron( const U_INT& N ): _weights(N+1) {}
+			template< typename U_INT >
+			explicit Perceptron( const U_INT& N ): _weights(N+1) { static_assert(std::is_integral< U_INT >::value && std::is_unsigned< U_INT >::value, "Input has to be an unsigned integer!"); }
 			// -- const reference weights vector
 			explicit Perceptron( const MLVector< WeightType >& refWeights ): _weights(refWeights) {}
 			// -- rvalue weights vector
@@ -62,10 +62,10 @@ namespace MLearn{
 			// MODIFIERS
 			void setWeights( const MLVector< WeightType >& refWeights ) { _weights = refWeights; }
 			void setWeights( MLVector< WeightType >&& refWeights ) { _weights = std::move(refWeights); }
-			template< typename U_INT, typename = typename std::enable_if< std::is_integral< U_INT >::value && std::is_unsigned< U_INT >::value, U_INT>::type >
-			void setSize( const U_INT& N ) { _weights.resize(N+1); }
-			template< typename U_INT, typename = typename std::enable_if< std::is_integral< U_INT >::value && std::is_unsigned< U_INT >::value, U_INT>::type >
-			void setMaxIter( const U_INT& N ) { _max_iter = (uint32_t)N; }
+			template< typename U_INT >
+			void setSize( const U_INT& N ) { static_assert(std::is_integral< U_INT >::value && std::is_unsigned< U_INT >::value, "Input has to be an unsigned integer!"); _weights.resize(N+1); }
+			template< typename U_INT >
+			void setMaxIter( const U_INT& N ) { static_assert(std::is_integral< U_INT >::value && std::is_unsigned< U_INT >::value, "Input has to be an unsigned integer!"); _max_iter = (uint32_t)N; }
 			void initializeZero() { _weights = std::move(MLVector< WeightType >::Zero(_weights.size())); }
 			void initializeRandom( WeightType scaleFactor = WeightType(1) ) { _weights = std::move( scaleFactor*MLVector< WeightType >::Random(_weights.size()) ); }
 			void setTolerance( WeightType new_tolerance ) { MLEARN_ASSERT( !std::signbit(new_tolerance), "invalid value. Tolerance must be positive!" ); _tolerance = new_tolerance; }

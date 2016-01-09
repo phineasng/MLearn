@@ -25,9 +25,7 @@ namespace MLearn{
 			// -- const reference layers vector 
 			explicit Autoencoder( const MLVector<IndexType>& refLayers ): 
 				_layers(refLayers),
-				_weights(refLayers.head(refLayers.size()-1).dot(refLayers.tail(refLayers.size()-1)) + refLayers.array().sum()),
-				_activations(refLayers.array().sum()-refLayers[0]),
-				_pre_activations(refLayers.array().sum())
+				_weights(refLayers.head(refLayers.size()-1).dot(refLayers.tail(refLayers.size()-1)) + refLayers.array().sum())
 			{
 				MLEARN_WARNING( refLayers.size() > 1 , "Not a deep architecture: implemented training algorithm may throw an error!");
 				MLEARN_ASSERT( refLayers[0] == refLayers[refLayers.size() - 1], "Autoencoders have to have the same number of units in the input and the output layers!" );
@@ -35,15 +33,11 @@ namespace MLearn{
 			// -- copy constructor
 			Autoencoder( const Autoencoder<WeightType,IndexType>& refAutoencoder ): 
 				_layers(refAutoencoder._layers),
-				_weights(refAutoencoder._weights),
-				_activations(refAutoencoder._activations),
-				_pre_activations(refAutoencoder._pre_activations){}
+				_weights(refAutoencoder._weights){}
 			// -- move constructor
 			Autoencoder( Autoencoder<WeightType,IndexType>&& refAutoencoder ): 
 				_layers(std::move(refAutoencoder._layers)),
-				_weights(std::move(refAutoencoder._weights)),
-				_activations(std::move(refAutoencoder._activations)),
-				_pre_activations(std::move(refAutoencoder._pre_activations)){}
+				_weights(std::move(refAutoencoder._weights)){}
 			// ASSIGNMENT OPERATOR
 			// -- copy assignment
 			Autoencoder& operator=( const Autoencoder<WeightType,IndexType>& refAutoencoder ){
@@ -105,8 +99,6 @@ namespace MLearn{
 		protected:
 			MLVector< IndexType > _layers;				 
 			MLVector< WeightType > _weights;
-			MLVector< WeightType > _activations;
-			MLVector< WeightType > _pre_activations;
 		private:
 		};
 

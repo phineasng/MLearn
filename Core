@@ -1,5 +1,4 @@
 #include "Base/MLearnTypes.h"
 #include "Base/MLearnCommonFuncs.h"
 #include "Base/MLearnMacros.h"
-#include "Base/MLearnTypeTraits.h"
 #include "Base/MLearnLossFunction.h"

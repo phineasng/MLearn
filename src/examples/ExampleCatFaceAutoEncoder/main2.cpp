@@ -25,11 +25,16 @@ int main(int argc, char* argv[]){
 	// import weights
   	std::ifstream myfile;
   	myfile.open(FILENAME, std::ifstream::in );
-  	double num;
-  	int i = 0;
   	MLVector< double > trained_weights(layers.head(N_layers-1).dot(layers.tail(N_layers-1)) + layers.tail(N_layers-1).array().sum());
-  	while ( myfile >> num ){
-  		trained_weights[i++] = num;
+  	if (myfile.is_open()){
+  		double num;
+  	  	int i = 0;
+  	  	while ( myfile >> num ){
+  	  		trained_weights[i++] = num;
+  	  	}
+  	}else{
+  		std::cerr << "Problem in opening the trained_weights file. Check the path to the file." << std::endl;
+  		return -1;
   	}
   	myfile.close();
 	

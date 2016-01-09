@@ -28,8 +28,8 @@ int main(int argc, char* argv[]){
 	constexpr ActivationType output_act = ActivationType::LOGISTIC;
 
 	// Loss and regularization type
-	constexpr LossType loss = LossType::L2_SQUARED;
-	constexpr Regularizer reg = Regularizer::L2;
+	constexpr LossType loss = LossType::SOFTMAX_CROSS_ENTROPY;
+	constexpr Regularizer reg = Regularizer::SHARED_WEIGHTS;
 
 	// Generate dataset 
 	srand((unsigned int) time(0));
@@ -40,9 +40,19 @@ int main(int argc, char* argv[]){
 	// Set some random weights
 	srand((unsigned int) time(0));
 	MLVector<double> weights = 5*MLVector<double>::Random( layers.head(N_layers-1).dot(layers.tail(N_layers-1)) + layers.tail(N_layers-1).array().sum() );
+
 	MLVector<double> gradient_pre_allocation(weights.size());
 	MLVector<double> gradient(weights.size());
 	MLVector<double> gradient_numerical(weights.size());
+	Eigen::Matrix<uint,2,-1,Eigen::ColMajor|Eigen::AutoAlign> shared(2,0);
+	Eigen::Matrix<uint,2,-1,Eigen::ColMajor|Eigen::AutoAlign> tr_shared(2,1);
+	tr_shared(0,0) = 0;
+	tr_shared(1,0) = 1;
+
+	Eigen::Map< MLMatrix<double> > v1(weights.data(),15,30);
+	Eigen::Map< MLMatrix<double> > v2(weights.data()+30*15+15,30,15);
+
+	v2 = v1.transpose();
 
 	// Build the net explorer
 	FCNetsExplorer<double,uint,hidden_act,output_act> explorer(layers);
@@ -55,7 +65,7 @@ int main(int argc, char* argv[]){
 	Optimization::GradientOption<Optimization::DifferentiationMode::NUMERICAL_CENTRAL,double,uint> options_numeric(1e-7);
 	
 	// Build cost function
-	TEMPLATED_FC_NEURAL_NET_COST_CONSTRUCTION( loss,reg,layers,samples,outputs,explorer,options,grad_output,gradient_pre_allocation,cost);
+	TEMPLATED_FC_NEURAL_NET_COST_CONSTRUCTION_WITH_SHARED_WEIGHTS( loss,reg,layers,samples,outputs,explorer,options,grad_output,gradient_pre_allocation,shared,tr_shared,cost);
 
 	cost.compute_gradient<Optimization::DifferentiationMode::ANALYTICAL>(weights,gradient);
 
@@ -64,8 +74,8 @@ int main(int argc, char* argv[]){
 	std::cout << "diff = " << std::endl << (gradient-gradient_numerical) << std::endl << std::endl;
 	std::cout << "Norm diff = " << (gradient-gradient_numerical).norm()/gradient.norm() << ", Max diff = "<< (gradient-gradient_numerical).array().abs().maxCoeff() << std::endl;
 
-	Optimization::GradientDescent<Optimization::DifferentiationMode::ANALYTICAL,LineSearchStrategy::BACKTRACKING,double,uint,2> minimizer;
-	minimizer.minimize(cost,weights);
+	/*Optimization::GradientDescent<Optimization::DifferentiationMode::ANALYTICAL,LineSearchStrategy::BACKTRACKING,double,uint,2> minimizer;
+	minimizer.minimize(cost,weights);*/
 
  	return 0;
 }

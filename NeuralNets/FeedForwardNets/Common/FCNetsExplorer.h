@@ -113,10 +113,10 @@ namespace MLearn{
 				static_assert( std::is_floating_point<WeightType>::value, "The weights type has to be floating point!" );
 				static_assert( std::is_integral<IndexType>::value && std::is_unsigned<IndexType>::value, "The index type has to be integer and unsigned!" );
 				// TYPEDEFS
-				typedef WeightType 	Scalar_T;
-				typedef IndexType 	Index_T;
-				static inline constexpr ActivationType getHiddenLayerType() { return HiddenLayerActivation; }
-				static inline constexpr ActivationType getOutputLayerType() { return OutputLayerActivation; }
+				typedef WeightType 				Scalar_T;
+				typedef IndexType 				Index_T;
+				static const ActivationType 	HiddenActivationType = HiddenLayerActivation;
+				static const ActivationType 	OutputActivationType = OutputLayerActivation;
 				// CONSTRUCTOR
 				FCNetsExplorer(const MLVector< IndexType >& refLayers):
 					layers(refLayers),

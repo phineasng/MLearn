@@ -61,12 +61,12 @@ namespace MLearn{
 				MLVector< ScalarType > gradient(x.size());
 				to_sample.resize( size_batch );
 
+				Utility::VerbosityLogger<1,VERBOSITY_REF>::log( "====== STARTING: Stochastic Gradient Descent Optimization ======\n" );
+
 				sample_indeces();
 				cost.compute_gradient(x,gradient,gradient_options);
 				ScalarType sqTolerance = tolerance*tolerance;
 				UnsignedIntegerType iter = UnsignedIntegerType(0);
-				
-				Utility::VerbosityLogger<1,VERBOSITY_REF>::log( "====== STARTING: Gradient Descent Optimization ======\n" );
 				
 				while( (gradient.squaredNorm() > sqTolerance) && (iter < max_iter) ){
 					
@@ -86,7 +86,7 @@ namespace MLearn{
 				Utility::VerbosityLogger<1,VERBOSITY_REF>::log( " out of " );
 				Utility::VerbosityLogger<1,VERBOSITY_REF>::log( max_iter );
 				Utility::VerbosityLogger<1,VERBOSITY_REF>::log( " iterations!\n" );
-				Utility::VerbosityLogger<1,VERBOSITY_REF>::log( "====== DONE:	 Gradient Descent Optimization ======\n" );
+				Utility::VerbosityLogger<1,VERBOSITY_REF>::log( "====== DONE:	 Stochastic Gradient Descent Optimization ======\n" );
 			}
 		private:
 			MLVector< UnsignedIntegerType > to_sample;

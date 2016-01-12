@@ -29,7 +29,7 @@ int main(int argc, char* argv[]){
 
 	// Loss and regularization type
 	constexpr LossType loss = LossType::SOFTMAX_CROSS_ENTROPY;
-	constexpr Regularizer reg = Regularizer::SHARED_WEIGHTS;
+	constexpr Regularizer reg = Regularizer::L2;
 
 	// Generate dataset 
 	srand((unsigned int) time(0));

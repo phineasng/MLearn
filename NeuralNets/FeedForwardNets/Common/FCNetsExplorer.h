@@ -125,7 +125,7 @@ namespace MLearn{
 					dropped( refLayers.array().sum() ),
 					rng(static_cast<std::mt19937::result_type>(std::chrono::system_clock::now().time_since_epoch().count())),
 					b_dist(0.5) {
-						MLEARN_ASSERT( layers.size() > 2, "Not a deep architecture: at least 1 hidden layer is needed for the algorithm to work!" );
+						MLEARN_ASSERT( layers.size() > 1, "Not a deep architecture: at least 2 layers are needed for the algorithm to work!" );
 						MLEARN_WARNING( ( layers.array() > 0 ).all(), "Some layers have zero units!" );
 						inv_p = WeightType(1)/b_dist.p();
 					}
@@ -249,6 +249,8 @@ namespace MLearn{
 				}
 				// UPDATE INTERNAL MODEL ( external modification of the layers )
 				void internal_resize(){
+					MLEARN_ASSERT( layers.size() > 1, "Not a deep architecture: at least 2 layers are needed for the algorithm to work!" );
+					MLEARN_WARNING( ( layers.array() > 0 ).all(), "Some layers have zero units!" );
 					activations.resize(layers.array().sum());
 					pre_activations.resize(layers.array().sum());
 					dropped.resize(layers.array().sum());

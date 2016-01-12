@@ -15,9 +15,9 @@
 #define TEMPLATED_FC_NEURAL_NET_COST_CONSTRUCTION( loss,reg,arg0,arg1,arg2,arg3,arg4,arg5,arg6,cost_variable_name )\
 		MLearn::NeuralNets::FeedForwardNets::FCCostFunction<	loss,\
 																reg,\
-																arg3.getHiddenLayerType(),\
-																arg3.getOutputLayerType(),\
-																std::remove_reference<decltype(arg0[0])>::type,\
+																decltype(arg3)::HiddenActivationType,\
+																decltype(arg3)::OutputActivationType,\
+																typename std::remove_reference<decltype(arg0[0])>::type,\
 																decltype(arg1),\
 																decltype(arg2) >\
 			cost_variable_name(arg0,arg1,arg2,arg3,arg4,arg5,arg6)
@@ -26,9 +26,9 @@
 #define TEMPLATED_FC_NEURAL_NET_COST_CONSTRUCTION_WITH_SHARED_WEIGHTS( loss,reg,arg0,arg1,arg2,arg3,arg4,arg5,arg6,arg7,arg8,cost_variable_name )\
 		MLearn::NeuralNets::FeedForwardNets::FCCostFunction<	loss,\
 																reg,\
-																arg3.getHiddenLayerType(),\
-																arg3.getOutputLayerType(),\
-																std::remove_reference<decltype(arg0[0])>::type,\
+																decltype(arg3)::HiddenActivationType,\
+																decltype(arg3)::OutputActivationType,\
+																typename std::remove_reference<decltype(arg0[0])>::type,\
 																decltype(arg1),\
 																decltype(arg2) >\
 			cost_variable_name(arg0,arg1,arg2,arg3,arg4,arg5,arg6,arg7,arg8)
@@ -177,28 +177,32 @@ namespace MLearn{
 					Eigen::Map< MLMatrix<typename DERIVED::Scalar> > weights_1(gradient.segment(offset_1,0).data(),0,0);
 					Eigen::Map< MLMatrix<typename DERIVED::Scalar> > weights_2(gradient.segment(offset_2,0).data(),0,0);
 
-					for ( decltype(shared.cols()) idx = 0; idx < shared.cols(); ++idx){
-
-						offset_1 = compute_offset( shared(0,idx) );
-						offset_2 = compute_offset( shared(1,idx) );
-
-						new (&weights_1) Eigen::Map< MLMatrix<typename DERIVED::Scalar> >(gradient.segment(offset_1,0).data(),layers[ shared(0,idx) + 1 ],layers[ shared(0,idx) ]);
-						new (&weights_2) Eigen::Map< MLMatrix<typename DERIVED::Scalar> >(gradient.segment(offset_2,0).data(),layers[ shared(1,idx) + 1 ],layers[ shared(1,idx) ]);
-
-						weights_1 += weights_2;
-						weights_2 = weights_1;
+					if (shared.cols() > 0){
+						for ( decltype(shared.cols()) idx = 0; idx < shared.cols(); ++idx){
+					
+							offset_1 = compute_offset( shared(0,idx) );
+							offset_2 = compute_offset( shared(1,idx) );
+					
+							new (&weights_1) Eigen::Map< MLMatrix<typename DERIVED::Scalar> >(gradient.segment(offset_1,0).data(),layers[ shared(0,idx) + 1 ],layers[ shared(0,idx) ]);
+							new (&weights_2) Eigen::Map< MLMatrix<typename DERIVED::Scalar> >(gradient.segment(offset_2,0).data(),layers[ shared(1,idx) + 1 ],layers[ shared(1,idx) ]);
+					
+							weights_1 += weights_2;
+							weights_2 = weights_1;
+						}
 					}
 
-					for ( decltype(tr_shared.cols()) idx = 0; idx < tr_shared.cols(); ++idx){
+					if (tr_shared.cols() > 0){
+						for ( decltype(tr_shared.cols()) idx = 0; idx < tr_shared.cols(); ++idx){
 
-						offset_1 = compute_offset( tr_shared(0,idx) );
-						offset_2 = compute_offset( tr_shared(1,idx) );
+							offset_1 = compute_offset( tr_shared(0,idx) );
+							offset_2 = compute_offset( tr_shared(1,idx) );
 
-						new (&weights_1) Eigen::Map< MLMatrix<typename DERIVED::Scalar> >(gradient.segment(offset_1,0).data(),layers[ tr_shared(0,idx) + 1 ],layers[ tr_shared(0,idx) ]);
-						new (&weights_2) Eigen::Map< MLMatrix<typename DERIVED::Scalar> >(gradient.segment(offset_2,0).data(),layers[ tr_shared(1,idx) + 1 ],layers[ tr_shared(1,idx) ]);
+							new (&weights_1) Eigen::Map< MLMatrix<typename DERIVED::Scalar> >(gradient.segment(offset_1,0).data(),layers[ tr_shared(0,idx) + 1 ],layers[ tr_shared(0,idx) ]);
+							new (&weights_2) Eigen::Map< MLMatrix<typename DERIVED::Scalar> >(gradient.segment(offset_2,0).data(),layers[ tr_shared(1,idx) + 1 ],layers[ tr_shared(1,idx) ]);
 
-						weights_1 += weights_2.transpose();
-						weights_2 = weights_1.transpose();
+							weights_1 += weights_2.transpose();
+							weights_2 = weights_1.transpose();
+						}
 					}
 
 					return;

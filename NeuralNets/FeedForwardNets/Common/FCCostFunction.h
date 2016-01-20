@@ -358,7 +358,7 @@ namespace MLearn{
 						net_explorer.FCNetsExplorer<typename DERIVED::Scalar,IndexType,HiddenLayerActivation,OutputLayerActivation>::template forwardpass< ( R & Regularizer::DROPOUT) == Regularizer::DROPOUT >( x, inputs.col(idx) );
 						loss += LossFunction<L>::evaluate( net_explorer.getActivations().tail( layers[layers.size() - 1] ), outputs.col(idx));
 					}
-					loss /= inputs.cols();
+					loss /= typename INNER_DERIVED::Scalar(inputs.cols());
 					// L1 or L2 regularization
 					Regulator< ((R & Regularizer::L1) == Regularizer::L1) || ((R & Regularizer::L2) == Regularizer::L2) >::template apply_to_loss<IndexType,R>( layers, x, loss, options );
 
@@ -378,7 +378,7 @@ namespace MLearn{
 						compute_gradient_on_sample(x,gradient_tmp,idx);
 						gradient += gradient_tmp;
 					}
-					gradient /= inputs.cols();
+					gradient /= typename INNER_DERIVED::Scalar(inputs.cols());
 					// Shared weights regularization
 					SharedRegulator< (R & Regularizer::SHARED_WEIGHTS) == Regularizer::SHARED_WEIGHTS >::process_gradient(gradient,layers,additional_fields);
 					// L1 or L2 regularization
@@ -397,7 +397,7 @@ namespace MLearn{
 						compute_gradient_on_sample(x,gradient_tmp,indeces[idx]);
 						gradient += gradient_tmp;
 					}
-					gradient /= indeces.size();
+					gradient /= typename INNER_DERIVED::Scalar(indeces.size());
 					// Shared weights regularization
 					SharedRegulator< (R & Regularizer::SHARED_WEIGHTS) == Regularizer::SHARED_WEIGHTS >::process_gradient(gradient,layers,additional_fields);
 					// L1 or L2 regularization

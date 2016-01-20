@@ -31,7 +31,6 @@ namespace MLearn{
 				MultiLayerPerceptron(): BaseClass(){}
 				MultiLayerPerceptron( const MLVector< IndexType >& refLayers ): 
 						BaseClass(refLayers) {
-							MLEARN_ASSERT( refLayers[0] == refLayers[ refLayers.size() - 1 ], "An autoencoder has to have input and output layer of the same dimension!" );
 						}
 				MultiLayerPerceptron( const MultiLayerPerceptron< WeightType, IndexType, HiddenLayerActivation, OutputLayerActivation >& refEncoder ): 
 						BaseClass(refEncoder) {}
@@ -67,11 +66,9 @@ namespace MLearn{
 			protected:	
 			public:	
 				void setLayers_implementation(const MLVector< IndexType >& new_layers){
-					MLEARN_ASSERT( new_layers[0] == new_layers[ new_layers.size() - 1 ], "An autoencoder has to have input and output layer of the same dimension!" );
 					static_cast<BaseClass*>(this)->setLayers_implementation(new_layers);
 				}
 				void setLayersAndWeights_implementation(const MLVector< IndexType >& new_layers, const MLVector< WeightType >& new_weights){
-					MLEARN_ASSERT( new_layers[0] == new_layers[ new_layers.size() - 1 ], "An autoencoder has to have input and output layer of the same dimension!" );
 					static_cast<BaseClass*>(this)->setLayersAndWeights_implementation(new_layers,new_weights);
 				}	
 			private:

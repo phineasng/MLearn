@@ -83,13 +83,14 @@ int main(int argc, char* argv[]){
 
 	LineSearch< LineSearchStrategy::FIXED,double,uint > line_search(0.015);
 	Optimization::StochasticGradientDescent<LineSearchStrategy::FIXED,double,uint,3> minimizer;
-	minimizer.setMaxIter(15000);
-	minimizer.setDistributionParameters(0,N_images-1);
-	minimizer.setSizeBatch(256);
+	minimizer.setMaxIter(20000);
+	minimizer.setMaxEpoch(100);
+	minimizer.setSizeBatch(50);
+	minimizer.setNSamples(N_images);
 	minimizer.setLineSearchMethod(line_search);
 	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 	minimizer.setSeed(seed);
-
+	
 	RegularizerOptions<double> options;
 	options._l2_param = 0.005;
 	options._l1_param = 0.005;
@@ -104,7 +105,7 @@ int main(int argc, char* argv[]){
 	for (uint i = 0; i < N_hidden; ++i){
 
 		eigen_image = Eigen::Map<MLMatrix<double>>(weight_matrix.data()+i*1024,32,32);
-		eigen_image /= eigen_image.array().abs2().sum();
+		eigen_image /= std::sqrt(eigen_image.array().abs2().sum());
 		eigen2cv(eigen_image,image_to_eigen_gray);
 		normalize(image_to_eigen_gray,image_gray,0,255,NORM_MINMAX,CV_8UC1);
 		imshow( "Activation - visualize", image_gray );

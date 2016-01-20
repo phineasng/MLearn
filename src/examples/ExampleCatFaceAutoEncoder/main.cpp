@@ -98,14 +98,15 @@ int main(int argc, char* argv[]){
 
 	LineSearch< LineSearchStrategy::FIXED,double,uint > line_search(0.005);
 	TEMPLATED_FC_NEURAL_NET_COST_CONSTRUCTION_WITH_SHARED_WEIGHTS( loss,reg,layers,samples,samples,explorer,options,grad_output,gradient_pre_allocation,shared,tr_shared,cost);	
+	LineSearch< LineSearchStrategy::FIXED,double,uint > line_search(0.001);
 	Optimization::StochasticGradientDescent<LineSearchStrategy::FIXED,double,uint,3> minimizer;
-	minimizer.setMaxIter(10000);
-	minimizer.setDistributionParameters(0,N_images-1);
-	minimizer.setSizeBatch(256);
+	minimizer.setMaxIter(20000);
+	minimizer.setMaxEpoch(100);
+	minimizer.setSizeBatch(50);
+	minimizer.setNSamples(N_images);
 	minimizer.setLineSearchMethod(line_search);
 	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 	minimizer.setSeed(seed);
-	minimizer.minimize(cost,weights);	
 	
 	MLMatrix< double > weight_matrix = Eigen::Map< MLMatrix< double > >( weights.data(),N_hidden,1024 );
 	weight_matrix.transposeInPlace();
@@ -113,16 +114,13 @@ int main(int argc, char* argv[]){
 	for (uint i = 0; i < N_hidden; ++i){
 
 		eigen_image = Eigen::Map<MLMatrix<double>>(weight_matrix.data()+i*1024,32,32);
-		eigen_image /= eigen_image.array().abs2().sum();
+		eigen_image /= std::sqrt(eigen_image.array().abs2().sum());
 		eigen2cv(eigen_image,image_to_eigen_gray);
 		normalize(image_to_eigen_gray,image_gray,0,255,NORM_MINMAX,CV_8UC1);
 		imshow( "First Layer Activation - visualize", image_gray );
 		cv::waitKey();
 	
 	}
-
-	std::cout << v1.block(0,0,10,10) << std::endl << std::endl;
-	std::cout << v2.block(0,0,10,10) << std::endl << std::endl; 
 	
 	destroyWindow("First Layer Activation - visualize");
 

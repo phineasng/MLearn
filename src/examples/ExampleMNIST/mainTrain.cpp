@@ -7,6 +7,8 @@
 #include <MLearn/NeuralNets/FeedForwardNets/Common/FeedForwardBase.h>
 #include <MLearn/NeuralNets/FeedForwardNets/MultiLayerPerceptron/MultiLayerPerceptron.h>
 #include <MLearn/Optimization/StochasticGradientDescent.h>
+#include <MLearn/Optimization/GradientDescent.h>
+#include <MLearn/Optimization/Differentiation/Differentiator.h>
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -119,7 +121,7 @@ void importMNIST( MLMatrix< FLOAT_TYPE >& images, MLMatrix< FLOAT_TYPE >& output
 	cout << "Image dimensions: "<<N_rows<<"x"<<N_cols<<endl;
 
 	images.resize(N_rows*N_cols,N_images);
-	output = MLMatrix<FLOAT_TYPE>::Zero(10,N_images);
+	output = MLMatrix<FLOAT_TYPE>::Constant(10,N_images,-1);
 
 	// use openCV matrix
 	Mat image = Mat::zeros(N_rows,N_cols,CV_8UC1);
@@ -196,42 +198,49 @@ int main(){
 
 	// Setup MLP
 	// -- layers
-	uint N_layers = 4;
-	uint N_hidden_1 = 600;
-	uint N_hidden_2 = 400;
+	uint N_layers = 3;
+	uint N_hidden_1 = 100;
 	MLVector<INT_TYPE> layers(N_layers);
-	layers << images.rows(), N_hidden_1, N_hidden_2, class_assignments.rows();
+	layers << images.rows(), N_hidden_1,class_assignments.rows();
 	// -- activation
 	constexpr ActivationType hidden_act = ActivationType::LOGISTIC;
 	constexpr ActivationType output_act = ActivationType::LINEAR;
 	// -- loss
-	constexpr LossType LOSS = LossType::SOFTMAX_CROSS_ENTROPY;
+	constexpr LossType LOSS = LossType::L2_SQUARED;
 	// -- regularization
-	constexpr Regularizer REG = Regularizer::L2;
+	constexpr Regularizer REG = Regularizer::NONE;
 	RegularizerOptions< FLOAT_TYPE > options;
-	options._l2_param = 0.001;
+	options._l2_param = 0.0005;
+	options._l1_param = 0.00005;
 	// -- minimizer
-	LineSearch< LineSearchStrategy::FIXED,double,uint > line_search(0.015);
+	LineSearch< LineSearchStrategy::FIXED,double,uint > line_search(0.05);
 	Optimization::StochasticGradientDescent<LineSearchStrategy::FIXED,double,uint,3> minimizer;
-	minimizer.setMaxIter(20000);
-	minimizer.setDistributionParameters(0,N_images-1);
-	minimizer.setSizeBatch(1000);
+	minimizer.setMaxIter(500000);
+	minimizer.setMaxEpoch(10000);
+	minimizer.setSizeBatch(256);
+	minimizer.setNSamples(N_images);
 	minimizer.setLineSearchMethod(line_search);
 	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 	minimizer.setSeed(seed);
+	// -- minimizer_2
+	Optimization::GradientDescent<DifferentiationMode::ANALYTICAL,LineSearchStrategy::FIXED,double,uint,1> minimizer_2;
+	minimizer_2.setMaxIter(1000);
+	minimizer_2.setLineSearchMethod(line_search);
 	// -- intial weights
 	srand((unsigned int) time(0));
-	MLVector<double> weights = 0.05*MLVector<double>::Random( layers.head(N_layers-1).dot(layers.tail(N_layers-1)) + layers.tail(N_layers-1).array().sum() );
-	std::cout << weights.size() << std::endl;
+	MLVector<double> weights = 5*MLVector<double>::Random( layers.head(N_layers-1).dot(layers.tail(N_layers-1)) + layers.tail(N_layers-1).array().sum() );
 	weights.array() -= weights.array().mean();
 
 	// MLP
 	MultiLayerPerceptron<double,uint,hidden_act,output_act> net(layers);
-	net.setLayers(layers);
 	net.setWeights(weights);
 
+	//std::cout << "Gradient Check: ERROR = " << net.gradient_check_implementation< REG, LOSS, DifferentiationMode::NUMERICAL_CENTRAL >(images,class_assignments,options,grad_opt) << std::endl;
+
+	
 	// TRAIN!
 	net.train< FFNetTrainingMode::BATCH, REG, LOSS >(images,class_assignments,minimizer,options);
+	//net.train< FFNetTrainingMode::ONLINE, REG, LOSS >(images,class_assignments,minimizer_2,options);
 
 	// Visualize and save
 	weights = net.getWeights();
@@ -245,7 +254,7 @@ int main(){
 	for (uint i = 0; i < N_hidden_1; ++i){
 
 		eigen_image = Eigen::Map<MLMatrix<double>>(weight_matrix.data()+i*28*28,28,28);
-		eigen_image /= eigen_image.array().abs2().sum();
+		eigen_image /= std::sqrt(eigen_image.array().abs2().sum());
 		eigen2cv(eigen_image,image_to_eigen_gray);
 		normalize(image_to_eigen_gray,image_gray,0,255,NORM_MINMAX,CV_8UC1);
 		imshow( "Activation - visualize", image_gray );
@@ -258,7 +267,7 @@ int main(){
   	myfile.open(OUTPUT_WEIGHTS_PATH, std::ofstream::out | std::ofstream::trunc);
   	myfile << weights;
  	myfile.close();
-
+	
 	return 0;
 
 }

@@ -19,7 +19,7 @@
 #define FLOAT_TYPE double
 #define INT_TYPE uint
 #define VISUALIZE_FLAG false
-#define INTERACTIVE_FLAG true
+#define INTERACTIVE_FLAG false
 
 using namespace MLearn;
 using namespace NeuralNets;
@@ -200,7 +200,7 @@ int main(){
 	uint N_layers = 3;
 	uint N_hidden_1 = 100;
 	MLVector<INT_TYPE> layers(N_layers);
-	layers << images.rows(), N_hidden_1, 10;
+	layers << images.rows(), N_hidden_1,10;
 	// -- activation
 	constexpr ActivationType hidden_act = ActivationType::LOGISTIC;
 	constexpr ActivationType output_act = ActivationType::LINEAR;
@@ -211,20 +211,23 @@ int main(){
 		throw "Error opening weights file!";
 	}
 	int i = 0;
-	while( input_weights >> weights[i++] );
+	while( i < weights.size() ){
+		input_weights >> weights[i];
+		++i;
+	}
 
 	// Visualize
-	//namedWindow( "Activation - visualize", WINDOW_OPENGL );
 	MLMatrix< double > weight_matrix = Eigen::Map< MLMatrix< double > >( weights.data(),N_hidden_1,28*28 );
 	weight_matrix.transposeInPlace();
 	MLMatrix<double> eigen_image(28,28);
 	Mat image_gray;
 	Mat_<double> image_to_eigen_gray;
 
-	/*for (uint i = 0; i < N_hidden_1; ++i){
+	/*namedWindow( "Activation - visualize", WINDOW_OPENGL );
+	for (uint i = 0; i < N_hidden_1; ++i){
 
 		eigen_image = Eigen::Map<MLMatrix<double>>(weight_matrix.data()+i*28*28,28,28);
-		eigen_image /= eigen_image.array().abs2().sum();
+		eigen_image /= std::sqrt(eigen_image.array().abs2().sum());
 		eigen2cv(eigen_image,image_to_eigen_gray);
 		normalize(image_to_eigen_gray,image_gray,0,255,NORM_MINMAX,CV_8UC1);
 		imshow( "Activation - visualize", image_gray );

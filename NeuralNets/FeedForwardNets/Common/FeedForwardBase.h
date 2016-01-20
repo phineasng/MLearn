@@ -6,6 +6,7 @@
 #include "FCNetsExplorer.h"
 #include "FCCostFunction.h"
 #include "../../ActivationFunction.h"
+#include <MLearn/Optimization/Differentiation/Differentiator.h>
 
 // STL
 #include <type_traits>
@@ -199,6 +200,53 @@ namespace MLearn{
 									EIGEN_DERIVED,
 									EIGEN_DERIVED_2 > cost_function(layers,input,output,explorer,reg_options,gradient_tmp_output,gradient_tmp,shared_weights,tr_shared_weights);
 					minimizer.minimize(cost_function,weights);
+				}
+				template < 	Regularizer REG,
+							LossType LOSS,
+							Optimization::DifferentiationMode MODE,
+							typename EIGEN_DERIVED,
+							typename EIGEN_DERIVED_2 >
+				typename EIGEN_DERIVED::Scalar gradient_check_implementation( const Eigen::MatrixBase< EIGEN_DERIVED >& input, const Eigen::MatrixBase< EIGEN_DERIVED_2 >& output, const RegularizerOptions< WeightType >& reg_options = RegularizerOptions< WeightType >(), const Optimization::GradientOption< MODE, WeightType, IndexType >& grad_options = Optimization::GradientOption< MODE, WeightType, IndexType >() ){
+					static_assert( std::is_same<typename EIGEN_DERIVED::Scalar,typename EIGEN_DERIVED_2::Scalar>::value, "Not compatible input and output scalar type!");
+					static_assert( std::is_same<typename EIGEN_DERIVED::Scalar,WeightType>::value, "Input not compatible with the weights type!");
+					static_assert(  (MODE == Optimization::DifferentiationMode::NUMERICAL_FORWARD) ||
+									(MODE == Optimization::DifferentiationMode::NUMERICAL_BACKWARD) ||
+									(MODE == Optimization::DifferentiationMode::NUMERICAL_CENTRAL), "Choose a numerical method for gradient check!" );
+					MLEARN_ASSERT( input.cols() == output.cols(), "Not compatible input and output dimensions!");
+
+					gradient_tmp.resize( weights.size() );
+					gradient_tmp_output.resize( output.rows() );
+
+					// Sample only one input to perform gradient check
+					IndexType sample_idx;
+					if ( input.cols() > 0 ){
+						unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+						std::mt19937 rng(seed);
+						std::uniform_int_distribution<IndexType> dist(0,input.cols()-1);
+						sample_idx = dist(rng);
+					}else{
+						sample_idx = 0;
+					}
+
+					EIGEN_DERIVED single_input = input.col(sample_idx);
+					EIGEN_DERIVED single_output = output.col(sample_idx);
+
+					FCCostFunction< LOSS,
+									REG,
+									HiddenLayerActivation,
+									OutputLayerActivation,
+									IndexType,
+									EIGEN_DERIVED,
+									EIGEN_DERIVED_2 > cost_function(layers,single_input,single_output,explorer,reg_options,gradient_tmp_output,gradient_tmp,shared_weights,tr_shared_weights);
+					
+					MLVector< WeightType > gradient(weights.size());
+					MLVector< WeightType > gradient_numerical(weights.size()); 
+
+					cost_function.template compute_gradient<Optimization::DifferentiationMode::ANALYTICAL>(weights,gradient);
+					cost_function.template compute_gradient<MODE>(weights,gradient_numerical,grad_options);
+
+					return std::sqrt((gradient_numerical - gradient).squaredNorm()/gradient.squaredNorm());
+
 				}
 				template < typename EIGEN_DERIVED >
 				MLMatrix< typename EIGEN_DERIVED::Scalar > forwardpass_implementation( const Eigen::MatrixBase< EIGEN_DERIVED >& input ){

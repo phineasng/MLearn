@@ -12,6 +12,7 @@ Due to a recently developed interest in deep learning, the library may reveal a 
 * Eigen >= 3.2.7
 
 ### Dependencies for the examples
+* openCV
 
 ## Contributors
 * phineasng

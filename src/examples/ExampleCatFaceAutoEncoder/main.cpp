@@ -48,7 +48,7 @@ int main(int argc, char* argv[]){
 
 	// Set up
 	uint N_layers = 3;
-	uint N_hidden = 500;
+	uint N_hidden = 100;
 
 	// Setting layers
 	MLVector<uint> layers(N_layers);
@@ -56,7 +56,7 @@ int main(int argc, char* argv[]){
 
 	// Activation types
 	constexpr ActivationType hidden_act = ActivationType::LOGISTIC;
-	constexpr ActivationType output_act = ActivationType::LOGISTIC;
+	constexpr ActivationType output_act = ActivationType::LINEAR;
 	// Loss and regularization type
 	constexpr LossType loss = LossType::L2_SQUARED;
 	constexpr Regularizer reg = Regularizer::L2 | Regularizer::SHARED_WEIGHTS;
@@ -67,7 +67,7 @@ int main(int argc, char* argv[]){
 
 	// Set some random weights
 	srand((unsigned int) time(0));
-	MLVector<double> weights = 0.05*MLVector<double>::Random( layers.head(N_layers-1).dot(layers.tail(N_layers-1)) + layers.tail(N_layers-1).array().sum() );
+	MLVector<double> weights = 0.005*MLVector<double>::Random( layers.head(N_layers-1).dot(layers.tail(N_layers-1)) + layers.tail(N_layers-1).array().sum() );
 	weights.array() -= weights.array().mean();
 	MLVector<double> gradient_pre_allocation(weights.size());
 	MLVector<double> gradient(weights.size());
@@ -98,7 +98,6 @@ int main(int argc, char* argv[]){
 
 	LineSearch< LineSearchStrategy::FIXED,double,uint > line_search(0.005);
 	TEMPLATED_FC_NEURAL_NET_COST_CONSTRUCTION_WITH_SHARED_WEIGHTS( loss,reg,layers,samples,samples,explorer,options,grad_output,gradient_pre_allocation,shared,tr_shared,cost);	
-	LineSearch< LineSearchStrategy::FIXED,double,uint > line_search(0.001);
 	Optimization::StochasticGradientDescent<LineSearchStrategy::FIXED,double,uint,3> minimizer;
 	minimizer.setMaxIter(20000);
 	minimizer.setMaxEpoch(100);
@@ -107,6 +106,7 @@ int main(int argc, char* argv[]){
 	minimizer.setLineSearchMethod(line_search);
 	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 	minimizer.setSeed(seed);
+	minimizer.minimize(cost,weights);
 	
 	MLMatrix< double > weight_matrix = Eigen::Map< MLMatrix< double > >( weights.data(),N_hidden,1024 );
 	weight_matrix.transposeInPlace();

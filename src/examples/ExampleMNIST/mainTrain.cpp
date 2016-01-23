@@ -161,7 +161,7 @@ void importMNIST( MLMatrix< FLOAT_TYPE >& images, MLMatrix< FLOAT_TYPE >& output
 		}
 
 		// transform the image in the range 0 - 1
-		normalize(image,image_to_eigen_gray,0,1,NORM_MINMAX,CV_64FC1);
+		normalize(image,image_to_eigen_gray,-1,1,NORM_MINMAX,CV_64FC1);
 		cv2eigen(image_to_eigen_gray,eigen_image);
 		images.col(i) = view;
 
@@ -199,25 +199,25 @@ int main(){
 	// Setup MLP
 	// -- layers
 	uint N_layers = 3;
-	uint N_hidden_1 = 100;
+	uint N_hidden_1 = 175;
 	MLVector<INT_TYPE> layers(N_layers);
 	layers << images.rows(), N_hidden_1,class_assignments.rows();
 	// -- activation
-	constexpr ActivationType hidden_act = ActivationType::LOGISTIC;
+	constexpr ActivationType hidden_act = ActivationType::HYPER_TAN;
 	constexpr ActivationType output_act = ActivationType::LINEAR;
 	// -- loss
 	constexpr LossType LOSS = LossType::L2_SQUARED;
 	// -- regularization
-	constexpr Regularizer REG = Regularizer::NONE;
+	constexpr Regularizer REG = Regularizer::L2;
 	RegularizerOptions< FLOAT_TYPE > options;
 	options._l2_param = 0.0005;
 	options._l1_param = 0.00005;
 	// -- minimizer
-	LineSearch< LineSearchStrategy::FIXED,double,uint > line_search(0.05);
+	LineSearch< LineSearchStrategy::FIXED,double,uint > line_search(0.0001);
 	Optimization::StochasticGradientDescent<LineSearchStrategy::FIXED,double,uint,3> minimizer;
-	minimizer.setMaxIter(500000);
+	minimizer.setMaxIter(100000);
 	minimizer.setMaxEpoch(10000);
-	minimizer.setSizeBatch(256);
+	minimizer.setSizeBatch(128);
 	minimizer.setNSamples(N_images);
 	minimizer.setLineSearchMethod(line_search);
 	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
@@ -228,7 +228,7 @@ int main(){
 	minimizer_2.setLineSearchMethod(line_search);
 	// -- intial weights
 	srand((unsigned int) time(0));
-	MLVector<double> weights = 5*MLVector<double>::Random( layers.head(N_layers-1).dot(layers.tail(N_layers-1)) + layers.tail(N_layers-1).array().sum() );
+	MLVector<double> weights = 0.005*MLVector<double>::Random( layers.head(N_layers-1).dot(layers.tail(N_layers-1)) + layers.tail(N_layers-1).array().sum() );
 	weights.array() -= weights.array().mean();
 
 	// MLP

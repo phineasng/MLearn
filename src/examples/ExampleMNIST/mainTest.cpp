@@ -159,7 +159,7 @@ void importMNIST_test( MLMatrix< FLOAT_TYPE >& images, MLVector< INT_TYPE >& out
 		}
 
 		// transform the image in the range 0 - 1
-		normalize(image,image_to_eigen_gray,0,1,NORM_MINMAX,CV_64FC1);
+		normalize(image,image_to_eigen_gray,-1,1,NORM_MINMAX,CV_64FC1);
 		cv2eigen(image_to_eigen_gray,eigen_image);
 		images.col(i) = view;
 
@@ -198,11 +198,11 @@ int main(){
 	// Setup MLP
 	// -- layers
 	uint N_layers = 3;
-	uint N_hidden_1 = 100;
+	uint N_hidden_1 = 175;
 	MLVector<INT_TYPE> layers(N_layers);
 	layers << images.rows(), N_hidden_1,10;
 	// -- activation
-	constexpr ActivationType hidden_act = ActivationType::LOGISTIC;
+	constexpr ActivationType hidden_act = ActivationType::HYPER_TAN;
 	constexpr ActivationType output_act = ActivationType::LINEAR;
 	// -- weights
 	MLVector<double> weights( layers.head(N_layers-1).dot(layers.tail(N_layers-1)) + layers.tail(N_layers-1).array().sum() );

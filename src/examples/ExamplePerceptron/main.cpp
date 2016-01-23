@@ -17,10 +17,10 @@
 #define SCALAR_TYPE double
 #define CLASS_TYPE ushort
 
-#define CENTER_0_X 	0.0
-#define CENTER_0_Y 	0.0
-#define CENTER_0_Z 	0.0
-#define RADIUS_0 	0.1
+#define CENTER_0_X 	0.2
+#define CENTER_0_Y 	0.4
+#define CENTER_0_Z 	0.1
+#define RADIUS_0 	0.2
 
 #define CENTER_1_X 	0.5
 #define CENTER_1_Y 	0.5

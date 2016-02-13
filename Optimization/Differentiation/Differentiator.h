@@ -91,9 +91,10 @@ namespace MLearn{
 				gradient.resize(x.size());
 				typename DERIVED::Scalar inv_step_size = typename DERIVED::Scalar(1)/options.step_size;
 				MLVector< typename DERIVED::Scalar > x1 = x;
+				typename DERIVED::Scalar cost_in_x = cost.eval(x);
 				for ( decltype(x.size()) i = 0; i < x.size(); ++i ){
 					x1[i] += options.step_size;
-					gradient[i] = ( cost.eval(x1) - cost.eval(x) )*inv_step_size;
+					gradient[i] = ( cost.eval(x1) - cost_in_x )*inv_step_size;
 					x1[i] = x[i];
 				}
 			}
@@ -140,9 +141,10 @@ namespace MLearn{
 				gradient.resize(x.size());
 				typename DERIVED::Scalar inv_step_size = typename DERIVED::Scalar(1)/options.step_size;
 				MLVector< typename DERIVED::Scalar > x1 = x;
+				typename DERIVED::Scalar cost_in_x = cost.eval(x);
 				for ( decltype(x.size()) i = 0; i < x.size(); ++i ){
 					x1[i] -= options.step_size;
-					gradient[i] = ( cost.eval(x) - cost.eval(x1) )*inv_step_size;
+					gradient[i] = ( cost_in_x - cost.eval(x1) )*inv_step_size;
 					x1[i] = x[i];
 				}
 			}

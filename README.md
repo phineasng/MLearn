@@ -20,4 +20,4 @@ Due to a recently developed interest in deep learning, the library may reveal a 
 * frenaut
 
 ## Snapshots from experiments
-![](https://github.com/phineasng/MLearn/blob/master/src/examples/ExampleCatFaceAutoEncoder/img_features/556.jpg)
+![](https://github.com/phineasng/MLearn/blob/master/misc/imgs/BernoulliBernoulliRBM_19epochs.png)

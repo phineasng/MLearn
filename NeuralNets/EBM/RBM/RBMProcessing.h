@@ -81,8 +81,10 @@ namespace MLearn{
 				static inline const typename RBMParser<RBM,PROCESS_VISIBLE>::UNIT_TYPE& preprocess(RBM& rbm){
 					return RBMParser<RBM,PROCESS_VISIBLE>::getUnits(rbm);
 				} 
-				template < bool PROCESS_VISIBLE,typename RBM >
-				static inline const Eigen::Ref<const MLVector<SCALAR<PROCESS_VISIBLE,RBM>>>& preprocess(RBM& rbm, const Eigen::Ref<const MLVector<SCALAR<PROCESS_VISIBLE,RBM>>>& units ){
+				template < bool PROCESS_VISIBLE,typename RBM, typename DERIVED >
+				static inline const Eigen::MatrixBase<DERIVED>& preprocess(RBM& rbm, const Eigen::MatrixBase<DERIVED>& units ){
+					static_assert( std::is_same<typename DERIVED::Scalar, SCALAR<PROCESS_VISIBLE,RBM> >::value, "Incompatible scalar types!" );
+					static_assert( DERIVED::ColsAtCompileTime == 1, "Expected column vector!" );
 					return units;
 				} 
 			};
@@ -101,8 +103,8 @@ namespace MLearn{
 				template < bool PROCESS_VISIBLE,typename RBM >
 				using ReturnType = Eigen::CwiseBinaryOp< MULTIPLICATION<SCALAR<PROCESS_VISIBLE,RBM>>, const FIRST_TYPE<PROCESS_VISIBLE,RBM>, const SECOND_TYPE<PROCESS_VISIBLE,RBM>>;
 				
-				template < bool PROCESS_VISIBLE,typename RBM >
-				using AltReturnType = Eigen::CwiseBinaryOp< MULTIPLICATION<SCALAR<PROCESS_VISIBLE,RBM>>, const Eigen::Ref<const MLVector<SCALAR<PROCESS_VISIBLE,RBM>>>, const SECOND_TYPE<PROCESS_VISIBLE,RBM>>;
+				template < bool PROCESS_VISIBLE,typename RBM, typename DERIVED >
+				using AltReturnType = Eigen::CwiseBinaryOp< MULTIPLICATION<SCALAR<PROCESS_VISIBLE,RBM>>, const Eigen::MatrixBase<DERIVED>, const SECOND_TYPE<PROCESS_VISIBLE,RBM>>;
 				
 
 				template < bool PROCESS_VISIBLE,typename RBM >
@@ -114,8 +116,10 @@ namespace MLearn{
 					return units.binaryExpr( params.unaryExpr(INV_EXPONENTIAL<SCALAR>()), MULTIPLICATION<SCALAR>() );
 				} 
 
-				template < bool PROCESS_VISIBLE,typename RBM >
-				static inline AltReturnType<PROCESS_VISIBLE,RBM> preprocess(RBM& rbm, const Eigen::Ref<const MLVector<SCALAR<PROCESS_VISIBLE,RBM>>>& units){
+				template < bool PROCESS_VISIBLE,typename RBM,typename DERIVED >
+				static inline AltReturnType<PROCESS_VISIBLE,RBM,DERIVED> preprocess(RBM& rbm, const Eigen::MatrixBase<DERIVED>& units){
+					static_assert( std::is_same<typename DERIVED::Scalar, SCALAR<PROCESS_VISIBLE,RBM> >::value, "Incompatible scalar types!" );
+					static_assert( DERIVED::ColsAtCompileTime == 1, "Expected column vector!" );
 					const auto& params 	= RBMParser<RBM,PROCESS_VISIBLE>::getAdditionalParameters(rbm);
 					typedef SCALAR<PROCESS_VISIBLE,RBM> SCALAR;
 					MLEARN_ASSERT( units.size() == params.size(), "Incompatible vectors!" );

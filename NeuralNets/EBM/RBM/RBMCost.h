@@ -5,13 +5,81 @@
 #include <MLearn/Core>
 #include <MLearn/NeuralNets/Regularizer.h>
 #include <MLearn/Optimization/CostFunction.h>
+#include <MLearn/NeuralNets/ActivationFunction.h>
 #include "RBMUtils.h"
+#include "RBMProcessing.h"
+
+// STL includes
+#include <cmath>
 
 namespace MLearn{
 
 	namespace NeuralNets{
 
 		namespace RBMSupport{
+
+			/*
+			*	\brief Hidden distribution integral computer
+			*/
+			template < RBMUnitType HID_TYPE >
+			class HiddenIntegral{
+			public:
+				template < typename RBM, typename DERIVED >
+				static inline typename RBM::SCALAR compute_integral( const Eigen::MatrixBase<DERIVED>& interaction_terms, RBM& rbm ){
+					static_assert( std::is_same<typename DERIVED::Scalar,typename RBM::SCALAR>::value, "Scalar types must be the same" );
+					static_assert( DERIVED::ColsAtCompileTime == 1, "Expected column vector!" );
+					typename RBM::SCALAR integral = 0;
+					auto& bias_hidden = rbm.bias_hidden;
+					auto binary_op = [](const typename RBM::SCALAR& s1, const typename RBM::SCALAR& s2){
+						return static_cast<typename RBM::SCALAR>( std::log(1+std::exp(s1+s2)) );
+					};
+
+					integral = -(interaction_terms.binaryExpr(bias_hidden,binary_op).sum());
+
+					return integral;
+				}
+				template < typename RBMCOST >
+				using DerReturnType = decltype(RBMCOST::bias_hidden);
+				template < typename RBMCOST, typename DERIVED >
+				static inline DerReturnType<RBMCOST> compute_hidden_derivative( const Eigen::MatrixBase<DERIVED>& interaction_terms, RBMCOST& cost ){
+					static_assert( std::is_same<typename DERIVED::Scalar,typename RBMCOST::SCALAR>::value, "Scalar types must be the same" );
+					static_assert( DERIVED::ColsAtCompileTime == 1, "Expected column vector!" );
+					auto& rbm = cost.rbm;
+					auto& bias_hidden = rbm.bias_hidden;
+					cost.bias_hidden = -((interaction_terms+bias_hidden).unaryExpr(std::pointer_to_unary_function<typename RBMCOST::SCALAR,typename RBMCOST::SCALAR>(ActivationFunction<ActivationType::LOGISTIC>::evaluate)));
+					return cost.bias_hidden;
+				}
+
+			};
+
+			/*
+			*	\brief	RBM free energy. 
+			*/
+			template < RBMUnitType VIS_TYPE,RBMUnitType HID_TYPE >
+			class FreeEnergy{
+			public:
+				template< typename RBMCOST, typename DERIVED >
+				static inline typename RBMCOST::SCALAR compute_energy( const Eigen::MatrixBase<DERIVED>& input, const RBMCOST& cost){
+					typename RBMCOST::SCALAR energy = 0;
+					auto& rbm = cost.rbm;
+					auto& visible_bias = rbm.bias_visible;
+					auto& weights = rbm.weights;
+
+					energy -= input.dot(visible_bias);
+					energy += HiddenIntegral< HID_TYPE >::compute_integral( weights*input, rbm );
+
+					return energy;
+				}
+				template< typename RBMCOST, typename DERIVED >
+				static inline void compute_gradient( const Eigen::MatrixBase<DERIVED>& input, RBMCOST& cost){
+					auto& rbm = cost.rbm;
+					cost.bias_visible = -input;
+					auto& weights = rbm.weights;
+					cost.weights = HiddenIntegral< HID_TYPE >::compute_hidden_derivative( weights*input, cost )*input.transpose();
+
+					return;
+				}
+			};
 
 			/*
 			*	\brief	RBM cost function to be minimized
@@ -29,7 +97,7 @@ namespace MLearn{
 			public:
 				// CONSTRUCTOR
 				RBMCost(RBMSampler& refRbm, 
-						const Eigen::Ref< const MLMatrix<SCALAR> >& refInputs,
+						const Eigen::Ref< MLMatrix<SCALAR> > refInputs,
 						const RegularizerOptions<SCALAR>& refOptions,
 						MLVector< SCALAR >& ref_allocated_grad ):
 					rbm(refRbm),
@@ -49,18 +117,69 @@ namespace MLearn{
 					mapVariables();
 				}
 				// EVALUATE COST FUNCTION
+				/*
+				*	\brief This is actually the free energy and not a cost related to the "gradient"
+				*/
 				template < 	typename DERIVED >
 				typename DERIVED::Scalar eval( const Eigen::MatrixBase<DERIVED>& x ) const{
 					static_assert(std::is_same<SCALAR,typename DERIVED::Scalar>::value, "Scalar types have to be the same!");
 					static_assert(DERIVED::ColsAtCompileTime == 1, "Input has to be a column vector (or compatible structure)!");
 					MLEARN_ASSERT( x.size() == gradient_tmp.size(), "Dimension not valid!" );
 					SCALAR loss = SCALAR(0);
+					rbm.attachParameters(x);
+
+					for ( decltype(inputs.cols()) idx = 0; idx < inputs.cols(); ++idx ){
+						loss += FreeEnergy<VIS_TYPE,HID_TYPE>::template compute_energy(inputs.col(idx),*this);
+					}
 
 					return loss;
 				}
+				template< 	typename DERIVED,
+					   		typename DERIVED_2 >
+				void compute_analytical_gradient(  const Eigen::MatrixBase<DERIVED>& x, Eigen::MatrixBase<DERIVED_2>& gradient ) const{
+					static_assert( std::is_same<typename DERIVED::Scalar,typename DERIVED_2::Scalar>::value, "Scalar types must be the same" );
+					static_assert( std::is_same<typename DERIVED::Scalar,SCALAR>::value, "Scalar types must be the same" );
+					static_assert( (DERIVED::ColsAtCompileTime == 1) && (DERIVED_2::ColsAtCompileTime == 1), "Expected column vectors!" );
+					MLEARN_ASSERT( x.size() == gradient_tmp.size(), "Dimension not valid!" );
+					rbm.attachParameters(x);
+					gradient = MLVector<SCALAR>::Zero(x.size());
+
+					for ( decltype(inputs.cols()) idx = 0; idx < inputs.cols(); ++idx ){
+						rbm.sampleHFromV(inputs.col(idx));
+						rbm.sampleVFromH();
+						FreeEnergy<VIS_TYPE,HID_TYPE>::template compute_gradient(inputs.col(idx),*this);
+						gradient += gradient_tmp;
+						FreeEnergy<VIS_TYPE,HID_TYPE>::template compute_gradient(rbm.visible_units,*this);
+						gradient -= gradient_tmp;
+					}
+
+					return;
+				}
+				template< 	typename IndexType,
+							typename DERIVED,
+				   			typename DERIVED_2 >
+				void compute_stochastic_gradient( const Eigen::MatrixBase<DERIVED>& x, Eigen::MatrixBase<DERIVED_2>& gradient, const MLVector< IndexType >& idx ) const{
+					static_assert( std::is_same<typename DERIVED::Scalar,typename DERIVED_2::Scalar>::value, "Scalar types must be the same" );
+					static_assert( std::is_same<typename DERIVED::Scalar,SCALAR>::value, "Scalar types must be the same" );
+					static_assert( (DERIVED::ColsAtCompileTime == 1) && (DERIVED_2::ColsAtCompileTime == 1), "Expected column vectors!" );
+					MLEARN_ASSERT( x.size() == gradient_tmp.size(), "Dimension not valid!" );
+					rbm.attachParameters(x);
+					gradient = MLVector<SCALAR>::Zero(x.size());
+
+					for ( decltype(idx.size()) i = 0; i < idx.size(); ++i ){
+						rbm.sampleHFromV(inputs.col(idx[i]));
+						rbm.sampleVFromH();
+						FreeEnergy<VIS_TYPE,HID_TYPE>::template compute_gradient(inputs.col(idx[i]),*this);
+						gradient += gradient_tmp;
+						FreeEnergy<VIS_TYPE,HID_TYPE>::template compute_gradient(rbm.visible_units,*this);
+						gradient -= gradient_tmp;
+					}
+
+					return;
+				}
 			private:
 				RBMSampler& rbm;
-				const Eigen::Ref< const MLMatrix<SCALAR> >& inputs;
+				const Eigen::Ref< MLMatrix<SCALAR> > inputs;
 				const RegularizerOptions<SCALAR>& options;
 				/// \details For safety (in referencing the needed objects) and more flexibility (using the eigen types),
 				/// we plan to reconstruct this cost function class everytime a training algorithm is called.
@@ -70,12 +189,17 @@ namespace MLearn{
 				/// Therefore, we require the necessary temporaries to be built outside the class
 				/// and a reference to them at construction.
 				MLVector< SCALAR >& gradient_tmp;	
-				Eigen::Map< MLMatrix< SCALAR > > weights;
-				Eigen::Map< MLVector< SCALAR > > bias_visible;
-				Eigen::Map< MLVector< SCALAR > > bias_hidden;
-				Eigen::Map< MLVector< SCALAR > > additional_parameters_visible;
-				Eigen::Map< MLVector< SCALAR > > additional_parameters_hidden;
-			private: 
+				mutable Eigen::Map< MLMatrix< SCALAR > > weights;
+				mutable Eigen::Map< MLVector< SCALAR > > bias_visible;
+				mutable Eigen::Map< MLVector< SCALAR > > bias_hidden;
+				mutable Eigen::Map< MLVector< SCALAR > > additional_parameters_visible;
+				mutable Eigen::Map< MLVector< SCALAR > > additional_parameters_hidden;
+			private: // friends declarations
+				template <RBMUnitType V, RBMUnitType H >
+				friend class FreeEnergy;
+				template < RBMUnitType H >
+				friend class HiddenIntegral;
+			private: // helper functions
 				void mapVariables(){
 					auto N_vis = rbm.visible_units.size();
 					auto N_hid = rbm.hidden_units.size();

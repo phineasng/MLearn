@@ -48,6 +48,12 @@ namespace MLearn{
 					  		int N >
 				friend class RBMCost;
 
+				template < RBMUnitType V, RBMUnitType H >
+				friend class FreeEnergy;
+
+				template < RBMUnitType H >
+				friend class HiddenIntegral;
+
 			private: // Routines for parameters redefinition
 				inline void redefineAdditionalParameters(const Eigen::Ref< const MLVector<ScalarType> >& parameters, std::true_type T1, std::true_type T2 ){
 					auto offset = visible_units.size()*hidden_units.size() + visible_units.size() + hidden_units.size();
@@ -103,7 +109,7 @@ namespace MLearn{
 					auto N_vis = visible_units.size();
 					auto N_hid = hidden_units.size();
 					auto offset = N_vis*N_hid;
-					MLEARN_ASSERT( parameters.size() == (offset+N_vis+N_hid), "Wrong number of parameters!" );
+					MLEARN_ASSERT( parameters.size() == (offset+N_vis+N_hid+N_vis*RBMUnitTypeTraits<VISIBLE_TYPE>::N_params+N_hid*RBMUnitTypeTraits<HIDDEN_TYPE>::N_params), "Wrong number of parameters!" );
 					new (&weights) Eigen::Map< const MLMatrix< ScalarType > >( parameters.data(), N_hid, N_vis );
 					new (&bias_hidden) Eigen::Map< const MLVector< ScalarType > >( parameters.data() + offset, N_hid );
 					new (&bias_visible) Eigen::Map< const MLVector< ScalarType > >( parameters.data() + offset + N_hid, N_vis );

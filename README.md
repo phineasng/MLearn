@@ -20,4 +20,5 @@ Due to a recently developed interest in deep learning, the library may reveal a 
 * frenaut
 
 ## Snapshots from experiments
+* Filters learned by a Bernoulli-Bernoulli RBM
 ![](https://github.com/phineasng/MLearn/blob/master/misc/imgs/BernoulliBernoulliRBM_19epochs.png)

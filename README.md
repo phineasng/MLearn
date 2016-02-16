@@ -6,6 +6,7 @@ Due to a recently developed interest in deep learning, the library may reveal a 
 ## Algorithms implemented
 1. Perceptron
 2. FeedForward Nets (backprop + L1,L2,Dropout regularizations)
+3. RBM: in progress
 
 ## Dependencies
 * c++11 ( library tested using g++-4.9.2 )
@@ -17,3 +18,6 @@ Due to a recently developed interest in deep learning, the library may reveal a 
 ## Contributors
 * phineasng
 * frenaut
+
+## Snapshots from experiments
+![](https://github.com/phineasng/MLearn/blob/master/src/examples/ExampleCatFaceAutoEncoder/img_features/556.jpg)

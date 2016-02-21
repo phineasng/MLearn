@@ -6,7 +6,7 @@ Due to a recently developed interest in deep learning, the library may reveal a 
 ## Algorithms implemented
 1. Perceptron
 2. FeedForward Nets (backprop + L1,L2,Dropout regularizations)
-3. RBM: in progress
+3. RBM
 
 ## Dependencies
 * c++11 ( library tested using g++-4.9.2 )

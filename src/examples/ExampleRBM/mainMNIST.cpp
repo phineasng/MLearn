@@ -22,8 +22,9 @@
 #define INT_TYPE uint
 #define VISUALIZE_FLAG false
 #define WINDOW_NAME "Activation - visualize"
+#define WINDOW_NAME_SAMPLING "Sample"
 
-#define MIN_GAP_SIZE 5
+#define MIN_GAP_SIZE 2
 #define N_IMG_COLS 10
 
 using namespace MLearn;
@@ -238,36 +239,65 @@ int main(){
 
 	constexpr RBMUnitType visible = RBMUnitType::BERNOULLI;
 	constexpr RBMUnitType hidden = RBMUnitType::BERNOULLI;
-	constexpr Regularizer reg = Regularizer::L2;
-	constexpr RBMTrainingMode mode = RBMTrainingMode::CONTRASTIVE_DIVERGENCE;
+	constexpr Regularizer reg = Regularizer::NONE;   
+	constexpr RBMTrainingMode mode = RBMTrainingMode::PERSISTENT_CONTRASTIVE_DIVERGENCE;
 	MLVector<FLOAT_TYPE> grad_tmp(N_params);
 	RegularizerOptions<FLOAT_TYPE> opt;
+	opt._l2_param = 0.01;
+	opt._l1_param = 0.001;
 	RBMSampler<FLOAT_TYPE,visible,hidden> sampler(N_vis,N_hid);
-	MLVector<FLOAT_TYPE> params = 0.0005*MLVector<FLOAT_TYPE>::Random(N_params);
+	MLVector<FLOAT_TYPE> params = 0.00005*MLVector<FLOAT_TYPE>::Random(N_params);
 	sampler.attachParameters(params);
-	RBMCost< reg, RBMSampler<FLOAT_TYPE,visible,hidden>, mode > cost(sampler,images,opt,grad_tmp);
+	RBMCost< reg, RBMSampler<FLOAT_TYPE,visible,hidden>, mode,10 > cost(sampler,images,opt,grad_tmp);
+
+	//sampler.setVisibleDistributionParameters(5);
+	//sampler.setHiddenDistributionParameters(5);
 	
-	LineSearch< LineSearchStrategy::FIXED,double,uint > line_search(0.005);
+	LineSearch< LineSearchStrategy::FIXED,double,uint > line_search(0.1);
 	Optimization::StochasticGradientDescent<LineSearchStrategy::FIXED,double,uint,0> minimizer;
-	minimizer.setMaxIter(500);
+	minimizer.setMaxIter(60);
 	minimizer.setMaxEpoch(1);
-	minimizer.setSizeBatch(120);
+	minimizer.setSizeBatch(2);
 	minimizer.setNSamples(N_images);
 	minimizer.setLineSearchMethod(line_search);
 	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 	minimizer.setSeed(seed);
-	std::cout << "Start) Free energy = " << cost.evaluate(params) << std::endl;
+	std::cout << "Start) Average Free energy = " << cost.evaluate(params) << std::endl;
 	namedWindow( WINDOW_NAME, WINDOW_OPENGL );
 	show_filters( params, N_hid );
 
-	for ( uint i = 0; i < 1000; ++i ){
+	for ( uint i = 1; i <= 100; ++i ){
 		minimizer.minimize(cost,params);
-		std::cout << i <<") Free energy = " << cost.evaluate(params) << std::endl;
+		if (!(i%10))
+			std::cout << i <<")Average Free energy = " << cost.evaluate(params) << std::endl;
+		else
+			std::cout << i << std::endl;
 		show_filters( params, N_hid );
 	}
+	std::cout << "Press a key" << std::endl;
 	cv::waitKey();
-	destroyWindow(WINDOW_NAME);
 
+	namedWindow(WINDOW_NAME_SAMPLING, WINDOW_OPENGL);
+
+	MLMatrix<double> eigen_image(28,28);
+	Mat image_gray,image_blurred;
+	Mat_<double> image_to_eigen_gray;
+	sampler.attachParameters(params);
+
+	while(1){
+		// sample
+		sampler.sampleHFromV();
+		sampler.sampleVFromH();
+		eigen_image = Eigen::Map< const MLMatrix<FLOAT_TYPE> >(sampler.getVisibleUnits().data(),28,28);
+		eigen2cv(eigen_image,image_to_eigen_gray);
+		normalize(image_to_eigen_gray,image_gray,0,255,NORM_MINMAX,CV_8UC1);
+		medianBlur(image_gray,image_blurred,3);
+		imshow( WINDOW_NAME_SAMPLING, image_blurred );
+		cv::waitKey(1);
+	}
+
+	destroyWindow(WINDOW_NAME);
+	destroyWindow(WINDOW_NAME_SAMPLING);
 	return 0;
 
 }

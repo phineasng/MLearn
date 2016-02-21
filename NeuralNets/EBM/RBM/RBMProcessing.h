@@ -104,7 +104,7 @@ namespace MLearn{
 				using ReturnType = Eigen::CwiseBinaryOp< MULTIPLICATION<SCALAR<PROCESS_VISIBLE,RBM>>, const FIRST_TYPE<PROCESS_VISIBLE,RBM>, const SECOND_TYPE<PROCESS_VISIBLE,RBM>>;
 				
 				template < bool PROCESS_VISIBLE,typename RBM, typename DERIVED >
-				using AltReturnType = Eigen::CwiseBinaryOp< MULTIPLICATION<SCALAR<PROCESS_VISIBLE,RBM>>, const Eigen::MatrixBase<DERIVED>, const SECOND_TYPE<PROCESS_VISIBLE,RBM>>;
+				using AltReturnType = Eigen::CwiseBinaryOp< MULTIPLICATION<SCALAR<PROCESS_VISIBLE,RBM>>, const DERIVED, const SECOND_TYPE<PROCESS_VISIBLE,RBM>>;
 				
 
 				template < bool PROCESS_VISIBLE,typename RBM >

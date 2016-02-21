@@ -114,6 +114,7 @@ namespace MLearn{
 					new (&bias_hidden) Eigen::Map< const MLVector< ScalarType > >( parameters.data() + offset, N_hid );
 					new (&bias_visible) Eigen::Map< const MLVector< ScalarType > >( parameters.data() + offset + N_hid, N_vis );
 					redefineAdditionalParameters(parameters,VIS_PARAM_TRUTH_TYPE, HID_PARAM_TRUTH_TYPE);
+
 				}
 				// resize and attach
 				template < typename UINT >

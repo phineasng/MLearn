@@ -15,6 +15,25 @@ namespace MLearn{
 
 			typedef uint RBMIntegerType;
 
+			/*
+			*	\brief 	This operations are mainly used to make it easier
+			*			to define expression types without digging into Eigen's internal:: code
+			*/
+
+			template < typename SCALAR >
+			struct SUM{
+				SCALAR operator()(const SCALAR& s1, const SCALAR& s2) const{
+					return s1+s2;
+				}
+			};
+
+			template < typename SCALAR >
+			struct NEGATIVE_SUM{
+				SCALAR operator()(const SCALAR& s1, const SCALAR& s2) const{
+					return -(s1+s2);
+				}
+			};
+
 			template < typename SCALAR >
 			struct DIVISION{
 				SCALAR operator()(const SCALAR& s1, const SCALAR& s2) const{
@@ -86,8 +105,7 @@ namespace MLearn{
 			*/
 			enum class RBMTrainingMode{
 				CONTRASTIVE_DIVERGENCE,
-				PERSISTENT_CONTRASTIVE_DIVERGENCE,
-				PARALLEL_TEMPERING
+				PERSISTENT_CONTRASTIVE_DIVERGENCE
 			};
 
 

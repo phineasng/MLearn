@@ -64,8 +64,9 @@ namespace MLearn{
 				if (initialize_hessian){
 					hessian_approx = MLMatrix<ScalarType>::Identity(x.size(),x.size());
 				}
-				MLVector<ScalarType> direction(x.size()),y_k(x.size());
-				MLVector<ScalarType> gradient(x.size());
+				direction.resize(x.size());
+				y_k.resize(x.size());
+				gradient.resize(x.size());
 				ScalarType sqTolerance = tolerance*tolerance;
 				UnsignedIntegerType iter = UnsignedIntegerType(0);
 				ScalarType step;
@@ -107,6 +108,9 @@ namespace MLearn{
 			LineSearch<STRATEGY,ScalarType,UnsignedIntegerType> line_search;
 			UnsignedIntegerType max_iter = UnsignedIntegerType(1000);
 			ScalarType tolerance = ScalarType(1e-5);
+			MLVector<ScalarType> direction;
+			MLVector<ScalarType> y_k;
+			MLVector<ScalarType> gradient;
 			bool initialize_hessian = true;
 			MLMatrix<ScalarType> hessian_approx;
 		};

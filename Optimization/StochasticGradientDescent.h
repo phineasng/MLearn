@@ -60,9 +60,8 @@ namespace MLearn{
 			void minimize( const Cost& cost, Eigen::MatrixBase<DERIVED>& x ){
 				static_assert(std::is_same<typename DERIVED::Scalar, ScalarType >::value, "Input vector has to be the same type declared in the minimizer!");
 				
-				// allocate gradient
-				MLVector< ScalarType > gradient(x.size());
-				
+				// reallocate gradient if necessary
+				gradient.resize(x.size());
 				
 
 				Utility::VerbosityLogger<1,VERBOSITY_REF>::log( "====== STARTING: Stochastic Gradient Descent Optimization ======\n" );
@@ -155,6 +154,7 @@ namespace MLearn{
 			UnsignedIntegerType max_epoch = UnsignedIntegerType(100);
 			UnsignedIntegerType n_samples = UnsignedIntegerType(0);
 			UnsignedIntegerType size_batch = UnsignedIntegerType(10);
+			MLVector< ScalarType > gradient;
 			ScalarType tolerance = ScalarType(1e-5);
 			RNG_TYPE rng;
 			void shuffle_indeces() {

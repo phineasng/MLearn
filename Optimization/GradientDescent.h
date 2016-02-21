@@ -53,7 +53,7 @@ namespace MLearn{
 						typename DERIVED >
 			void minimize( const Cost& cost, Eigen::MatrixBase<DERIVED>& x ){
 				static_assert(std::is_same<typename DERIVED::Scalar, ScalarType >::value, "The scalar type of the vector has to be the same as the one declared for the minimizer!");
-				MLVector< ScalarType > gradient(x.size());
+				gradient.resize(x.size());
 				cost.compute_gradient(x,gradient,gradient_options);
 				ScalarType sqTolerance = tolerance*tolerance;
 				UnsignedIntegerType iter = UnsignedIntegerType(0);
@@ -80,6 +80,7 @@ namespace MLearn{
 				Utility::VerbosityLogger<1,VERBOSITY_REF>::log( "====== DONE:	 Gradient Descent Optimization ======\n" );
 			}
 		private:
+			MLVector< ScalarType > gradient;
 			GradientOption<MODE,ScalarType> gradient_options;
 			LineSearch<STRATEGY,ScalarType,UnsignedIntegerType> line_search;
 			UnsignedIntegerType max_iter = UnsignedIntegerType(1000);

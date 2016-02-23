@@ -176,9 +176,9 @@ namespace MLearn{
 					static_assert( DERIVED::ColsAtCompileTime == 1, "Expected column vector!" );
 					auto& rbm = cost.rbm;
 					auto& additional_parameters_hidden = rbm.additional_parameters_hidden;
-					//auto interface = Utility::MemoryPool::MLVectorPool<typename RBMCOST::SCALAR>::get(additional_parameters_hidden.size());
-					//auto& sigmas = interface.getReference();
-					MLVector<typename RBMCOST::SCALAR> sigmas = - (additional_parameters_hidden).unaryExpr(INV_EXPONENTIAL<typename RBMCOST::SCALAR>());
+					auto interface = Utility::MemoryPool::MLVectorPool<typename RBMCOST::SCALAR>::get(additional_parameters_hidden.size());
+					auto& sigmas = interface.getReference();
+					sigmas = - (additional_parameters_hidden).unaryExpr(INV_EXPONENTIAL<typename RBMCOST::SCALAR>());
 					cost.bias_hidden = sigmas.cwiseProduct(interaction_terms);
 					cost.additional_parameters_hidden.array() = - 0.5 - cost.bias_hidden.cwiseProduct(0.5*interaction_terms + rbm.bias_hidden).array();
 					sigmas.array() = sigmas.array()*(rbm.bias_hidden.array() + interaction_terms.array());

@@ -7,6 +7,7 @@
 #include <MLearn/Optimization/CostFunction.h>
 #include <MLearn/NeuralNets/ActivationFunction.h>
 #include <MLearn/Utility/LookUp/BinomialCoefficientLU.h>
+#include <MLearn/Utility/MemoryPool/MLVectorPool.h>
 #include "RBMUtils.h"
 #include "RBMProcessing.h"
 
@@ -170,16 +171,18 @@ namespace MLearn{
 				template < typename RBMCOST, typename DERIVED >
 				using DerReturnType = Eigen::CwiseBinaryOp< MULTIPLICATION<typename RBMCOST::SCALAR>, const MLVector<typename RBMCOST::SCALAR>, const InnerType<RBMCOST,DERIVED>>;
 				template < typename RBMCOST, typename DERIVED >
-				static inline DerReturnType<RBMCOST,DERIVED> compute_hidden_derivative( const Eigen::MatrixBase<DERIVED>& interaction_terms, RBMCOST& cost ){
+				static inline MLVector<typename RBMCOST::SCALAR> compute_hidden_derivative( const Eigen::MatrixBase<DERIVED>& interaction_terms, RBMCOST& cost ){
 					static_assert( std::is_same<typename DERIVED::Scalar,typename RBMCOST::SCALAR>::value, "Scalar types must be the same" );
 					static_assert( DERIVED::ColsAtCompileTime == 1, "Expected column vector!" );
 					auto& rbm = cost.rbm;
 					auto& additional_parameters_hidden = rbm.additional_parameters_hidden;
-					static MLVector<typename RBMCOST::SCALAR> sigmas; 
-					sigmas = - (additional_parameters_hidden).unaryExpr(INV_EXPONENTIAL<typename RBMCOST::SCALAR>());
+					//auto interface = Utility::MemoryPool::MLVectorPool<typename RBMCOST::SCALAR>::get(additional_parameters_hidden.size());
+					//auto& sigmas = interface.getReference();
+					MLVector<typename RBMCOST::SCALAR> sigmas = - (additional_parameters_hidden).unaryExpr(INV_EXPONENTIAL<typename RBMCOST::SCALAR>());
 					cost.bias_hidden = sigmas.cwiseProduct(interaction_terms);
 					cost.additional_parameters_hidden.array() = - 0.5 - cost.bias_hidden.cwiseProduct(0.5*interaction_terms + rbm.bias_hidden).array();
-					return sigmas.binaryExpr( rbm.bias_hidden.binaryExpr(interaction_terms,SUM<typename RBMCOST::SCALAR>()), MULTIPLICATION<typename RBMCOST::SCALAR>() );
+					sigmas.array() = sigmas.array()*(rbm.bias_hidden.array() + interaction_terms.array());
+					return sigmas;
 				}
 
 			};
@@ -250,7 +253,8 @@ namespace MLearn{
 					auto& visible_bias = rbm.bias_visible;
 					auto& weights = rbm.weights;
 					auto& additional_parameters_visible = rbm.additional_parameters_visible;
-					static MLVector< typename RBMCOST::SCALAR > processed_add;
+					auto interface = Utility::MemoryPool::MLVectorPool<typename RBMCOST::SCALAR>::get(additional_parameters_visible.size());
+					auto& processed_add = interface.getReference();
 					processed_add = additional_parameters_visible.unaryExpr(INV_EXPONENTIAL<typename RBMCOST::SCALAR>());
 					energy += 0.5*(input - visible_bias).cwiseAbs2().dot(processed_add);
 					energy += HiddenIntegral< HID_TYPE >::compute_integral( weights*input.binaryExpr(processed_add,MULTIPLICATION<typename RBMCOST::SCALAR>()), rbm );
@@ -263,9 +267,10 @@ namespace MLearn{
 					auto& visible_bias = rbm.bias_visible;
 					auto& additional_parameters_visible = rbm.additional_parameters_visible;
 					MULTIPLICATION<typename RBMCOST::SCALAR> mul_expr;
-					static MLVector< typename RBMCOST::SCALAR > processed_add;
+					auto interface = Utility::MemoryPool::MLVectorPool<typename RBMCOST::SCALAR>::get(additional_parameters_visible.size());
+					auto& processed_add = interface.getReference();
 					processed_add = additional_parameters_visible.unaryExpr(INV_EXPONENTIAL<typename RBMCOST::SCALAR>());
-
+					
 					cost.bias_visible = input.binaryExpr(processed_add,mul_expr);
 
 					auto& weights = rbm.weights;
@@ -473,38 +478,38 @@ namespace MLearn{
 				// regularizations
 				// L2 loss
 				template< typename DERIVED >
-				SCALAR L2Regularization( const Eigen::MatrixBase<DERIVED>& x, std::true_type T ) const{
+				inline SCALAR L2Regularization( const Eigen::MatrixBase<DERIVED>& x, std::true_type T ) const{
 					auto N_vis = rbm.visible_units.size();
 					auto N_hid = rbm.hidden_units.size();
 					return options._l2_param*x.head( N_vis*N_hid ).cwiseAbs2().sum();
 				}
 				template< typename DERIVED >
-				SCALAR L2Regularization( const Eigen::MatrixBase<DERIVED>& x, std::false_type F ) const{ return SCALAR(0); }
+				inline SCALAR L2Regularization( const Eigen::MatrixBase<DERIVED>& x, std::false_type F ) const{ return SCALAR(0); }
 				// L2 gradient
 				template< typename DERIVED, typename DERIVED_2 >
-				void L2Regularization( const Eigen::MatrixBase<DERIVED>& x,Eigen::MatrixBase<DERIVED_2>& gradient, std::true_type T ) const{
+				inline void L2Regularization( const Eigen::MatrixBase<DERIVED>& x,Eigen::MatrixBase<DERIVED_2>& gradient, std::true_type T ) const{
 					auto N = rbm.visible_units.size()*rbm.hidden_units.size();
 					gradient.head(N) +=  2*options._l2_param*x.head( N );
 				}
 				template< typename DERIVED, typename DERIVED_2 >
-				void L2Regularization( const Eigen::MatrixBase<DERIVED>& x,Eigen::MatrixBase<DERIVED_2>& gradient, std::false_type F ) const{}
+				inline void L2Regularization( const Eigen::MatrixBase<DERIVED>& x,Eigen::MatrixBase<DERIVED_2>& gradient, std::false_type F ) const{}
 				// L1 loss
 				template< typename DERIVED >
-				SCALAR L1Regularization( const Eigen::MatrixBase<DERIVED>& x, std::true_type T ) const{
+				inline SCALAR L1Regularization( const Eigen::MatrixBase<DERIVED>& x, std::true_type T ) const{
 					auto N_vis = rbm.visible_units.size();
 					auto N_hid = rbm.hidden_units.size();
 					return options._l1_param*x.head( N_vis*N_hid ).cwiseAbs().sum();
 				}
 				template< typename DERIVED >
-				SCALAR L1Regularization( const Eigen::MatrixBase<DERIVED>& x, std::false_type F ) const{ return SCALAR(0); }
+				inline SCALAR L1Regularization( const Eigen::MatrixBase<DERIVED>& x, std::false_type F ) const{ return SCALAR(0); }
 				// L2 gradient
 				template< typename DERIVED, typename DERIVED_2 >
-				void L1Regularization( const Eigen::MatrixBase<DERIVED>& x,Eigen::MatrixBase<DERIVED_2>& gradient, std::true_type T ) const{
+				inline void L1Regularization( const Eigen::MatrixBase<DERIVED>& x,Eigen::MatrixBase<DERIVED_2>& gradient, std::true_type T ) const{
 					auto N = rbm.visible_units.size()*rbm.hidden_units.size();
 					gradient.head(N) +=  options._l1_param*x.head( N ).unaryExpr( [](const SCALAR& s){ return static_cast<SCALAR>(s > 0); } );
 				}
 				template< typename DERIVED, typename DERIVED_2 >
-				void L1Regularization( const Eigen::MatrixBase<DERIVED>& x,Eigen::MatrixBase<DERIVED_2>& gradient, std::false_type F ) const{}
+				inline void L1Regularization( const Eigen::MatrixBase<DERIVED>& x,Eigen::MatrixBase<DERIVED_2>& gradient, std::false_type F ) const{}
 			};
 
 

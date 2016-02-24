@@ -276,10 +276,10 @@ namespace MLearn{
 					auto& weights = rbm.weights;
 					const auto& hidden_derivative = HiddenIntegral< HID_TYPE >::compute_hidden_derivative( weights*cost.bias_visible, cost );
 					cost.weights = hidden_derivative*cost.bias_visible.transpose();
-					cost.additional_parameters_visible = (rbm.weights.transpose()*hidden_derivative).binaryExpr(input,MULTIPLICATION<typename RBMCOST::SCALAR>()) + (input - visible_bias).cwiseAbs2();
+					cost.additional_parameters_visible = (rbm.weights.transpose()*hidden_derivative).binaryExpr(input,MULTIPLICATION<typename RBMCOST::SCALAR>()) + 0.5*(input - visible_bias).cwiseAbs2();
 					cost.additional_parameters_visible = -cost.additional_parameters_visible.binaryExpr(processed_add,mul_expr);
-					cost.additional_parameters_visible = cost.additional_parameters_visible.binaryExpr(additional_parameters_visible,mul_expr);
-					cost.bias_visible = cost.bias_visible.binaryExpr(processed_add,mul_expr) - cost.bias_visible;
+					//cost.additional_parameters_visible = cost.additional_parameters_visible.binaryExpr(additional_parameters_visible,mul_expr);
+					cost.bias_visible = visible_bias.binaryExpr(processed_add,mul_expr) - cost.bias_visible;
 
 					return;
 				}

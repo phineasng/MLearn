@@ -506,7 +506,7 @@ namespace MLearn{
 				template< typename DERIVED, typename DERIVED_2 >
 				inline void L1Regularization( const Eigen::MatrixBase<DERIVED>& x,Eigen::MatrixBase<DERIVED_2>& gradient, std::true_type T ) const{
 					auto N = rbm.visible_units.size()*rbm.hidden_units.size();
-					gradient.head(N) +=  options._l1_param*x.head( N ).unaryExpr( [](const SCALAR& s){ return static_cast<SCALAR>(s > 0); } );
+					gradient.head(N) +=  options._l1_param*x.head( N ).unaryExpr( [](const SCALAR& s){ return static_cast<SCALAR>(s > 0)*SCALAR(2) - SCALAR(1); } );
 				}
 				template< typename DERIVED, typename DERIVED_2 >
 				inline void L1Regularization( const Eigen::MatrixBase<DERIVED>& x,Eigen::MatrixBase<DERIVED_2>& gradient, std::false_type F ) const{}

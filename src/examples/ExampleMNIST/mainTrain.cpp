@@ -121,7 +121,7 @@ void importMNIST( MLMatrix< FLOAT_TYPE >& images, MLMatrix< FLOAT_TYPE >& output
 	cout << "Image dimensions: "<<N_rows<<"x"<<N_cols<<endl;
 
 	images.resize(N_rows*N_cols,N_images);
-	output = MLMatrix<FLOAT_TYPE>::Constant(10,N_images,-1);
+	output = MLMatrix<FLOAT_TYPE>::Constant(10,N_images,0);
 
 	// use openCV matrix
 	Mat image = Mat::zeros(N_rows,N_cols,CV_8UC1);
@@ -161,7 +161,7 @@ void importMNIST( MLMatrix< FLOAT_TYPE >& images, MLMatrix< FLOAT_TYPE >& output
 		}
 
 		// transform the image in the range 0 - 1
-		normalize(image,image_to_eigen_gray,-1,1,NORM_MINMAX,CV_64FC1);
+		normalize(image,image_to_eigen_gray,0,1,NORM_MINMAX,CV_64FC1);
 		cv2eigen(image_to_eigen_gray,eigen_image);
 		images.col(i) = view;
 
@@ -198,26 +198,28 @@ int main(){
 
 	// Setup MLP
 	// -- layers
-	uint N_layers = 3;
+	uint N_layers = 5;
 	uint N_hidden_1 = 175;
+	uint N_hidden_2 = 100;
+	uint N_hidden_3 = 70;
 	MLVector<INT_TYPE> layers(N_layers);
-	layers << images.rows(), N_hidden_1,class_assignments.rows();
+	layers << images.rows(), N_hidden_1,N_hidden_2,N_hidden_3,class_assignments.rows();
 	// -- activation
-	constexpr ActivationType hidden_act = ActivationType::HYPER_TAN;
+	constexpr ActivationType hidden_act = ActivationType::LOGISTIC;
 	constexpr ActivationType output_act = ActivationType::LINEAR;
 	// -- loss
-	constexpr LossType LOSS = LossType::L2_SQUARED;
+	constexpr LossType LOSS = LossType::SOFTMAX_CROSS_ENTROPY;
 	// -- regularization
-	constexpr Regularizer REG = Regularizer::L2;
+	constexpr Regularizer REG = Regularizer::NONE;
 	RegularizerOptions< FLOAT_TYPE > options;
 	options._l2_param = 0.0005;
 	options._l1_param = 0.00005;
 	// -- minimizer
-	LineSearch< LineSearchStrategy::FIXED,double,uint > line_search(0.0001);
-	Optimization::StochasticGradientDescent<LineSearchStrategy::FIXED,double,uint,3> minimizer;
-	minimizer.setMaxIter(100000);
-	minimizer.setMaxEpoch(10000);
-	minimizer.setSizeBatch(128);
+	LineSearch< LineSearchStrategy::FIXED,double,uint > line_search(0.5);
+	Optimization::StochasticGradientDescent<LineSearchStrategy::FIXED,double,uint,0> minimizer;
+	minimizer.setMaxIter(1200000);
+	minimizer.setMaxEpoch(1);
+	minimizer.setSizeBatch(20);
 	minimizer.setNSamples(N_images);
 	minimizer.setLineSearchMethod(line_search);
 	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
@@ -239,27 +241,32 @@ int main(){
 
 	
 	// TRAIN!
-	net.train< FFNetTrainingMode::BATCH, REG, LOSS >(images,class_assignments,minimizer,options);
+	//net.train< FFNetTrainingMode::BATCH, REG, LOSS >(images,class_assignments,minimizer,options);
 	//net.train< FFNetTrainingMode::ONLINE, REG, LOSS >(images,class_assignments,minimizer_2,options);
 
 	// Visualize and save
-	weights = net.getWeights();
-	namedWindow( "Activation - visualize", WINDOW_OPENGL );
-	MLMatrix< double > weight_matrix = Eigen::Map< MLMatrix< double > >( weights.data(),N_hidden_1,28*28 );
-	weight_matrix.transposeInPlace();
-	MLMatrix<double> eigen_image(28,28);
-	Mat image_gray;
-	Mat_<double> image_to_eigen_gray;
+		namedWindow( "Activation - visualize", WINDOW_OPENGL );
 
-	for (uint i = 0; i < N_hidden_1; ++i){
+	for (uint k = 0; k < 2000; ++k){
+		std::cout << "Epoch " << k << std::endl;
+		net.train< FFNetTrainingMode::BATCH, REG, LOSS >(images,class_assignments,minimizer,options);
+		weights = net.getWeights();
+		MLMatrix< double > weight_matrix = Eigen::Map< MLMatrix< double > >( weights.data(),N_hidden_1,28*28 );
+		weight_matrix.transposeInPlace();
+		MLMatrix<double> eigen_image(28,28);
+		Mat image_gray;
+		Mat_<double> image_to_eigen_gray;
 
-		eigen_image = Eigen::Map<MLMatrix<double>>(weight_matrix.data()+i*28*28,28,28);
-		eigen_image /= std::sqrt(eigen_image.array().abs2().sum());
-		eigen2cv(eigen_image,image_to_eigen_gray);
-		normalize(image_to_eigen_gray,image_gray,0,255,NORM_MINMAX,CV_8UC1);
-		imshow( "Activation - visualize", image_gray );
-		cv::waitKey();
-	
+		for (uint i = 0; i < N_hidden_1; ++i){
+
+			eigen_image = Eigen::Map<MLMatrix<double>>(weight_matrix.data()+i*28*28,28,28);
+			eigen_image /= std::sqrt(eigen_image.array().abs2().sum());
+			eigen2cv(eigen_image,image_to_eigen_gray);
+			normalize(image_to_eigen_gray,image_gray,0,255,NORM_MINMAX,CV_8UC1);
+			imshow( "Activation - visualize", image_gray );
+			cv::waitKey(1);
+		
+		}	
 	}
 
 	destroyWindow("Activation - visualize");

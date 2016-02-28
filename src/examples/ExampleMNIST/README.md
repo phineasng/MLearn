@@ -4,10 +4,11 @@ Here an MLP classifier is implemented to classify handwritten digits from the fa
 
 ## Results 
 
-I tried various shallow configuration using different activation functions. Sincerely, I don't remember all the details for each case. Most probably, for the hidden layer I used the logistic sigmoid function or the hyper tangent. In all cases I used linear activations on the output layer and L2 loss.  
+I tried various configuration using different activation functions. Sincerely, I don't remember all the details for each case. Most probably, for the hidden layer I used the logistic sigmoid function or the hyper tangent. In all cases I used linear activations on the output layer and L2 loss.  
 
 Best results:
 
 * Single Hidden Layer (130 units): 5.7%
 * Single Hidden Layer (100 units): 5.5%	
 * Single Hidden Layer (175 units): 3.65%
+* 3 Hidden Layers (175-100-70 units), LOGISTIC hidden neuron, LINEAR output neuron, cross entropy loss on softmaxed outputs: 2.64%

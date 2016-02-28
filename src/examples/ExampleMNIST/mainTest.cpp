@@ -159,7 +159,7 @@ void importMNIST_test( MLMatrix< FLOAT_TYPE >& images, MLVector< INT_TYPE >& out
 		}
 
 		// transform the image in the range 0 - 1
-		normalize(image,image_to_eigen_gray,-1,1,NORM_MINMAX,CV_64FC1);
+		normalize(image,image_to_eigen_gray,0,1,NORM_MINMAX,CV_64FC1);
 		cv2eigen(image_to_eigen_gray,eigen_image);
 		images.col(i) = view;
 
@@ -197,12 +197,14 @@ int main(){
 
 	// Setup MLP
 	// -- layers
-	uint N_layers = 3;
+	uint N_layers = 5;
 	uint N_hidden_1 = 175;
+	uint N_hidden_2 = 100;
+	uint N_hidden_3 = 70;
 	MLVector<INT_TYPE> layers(N_layers);
-	layers << images.rows(), N_hidden_1,10;
+	layers << images.rows(), N_hidden_1,N_hidden_2,N_hidden_3,10;
 	// -- activation
-	constexpr ActivationType hidden_act = ActivationType::HYPER_TAN;
+	constexpr ActivationType hidden_act = ActivationType::LOGISTIC;
 	constexpr ActivationType output_act = ActivationType::LINEAR;
 	// -- weights
 	MLVector<double> weights( layers.head(N_layers-1).dot(layers.tail(N_layers-1)) + layers.tail(N_layers-1).array().sum() );
@@ -215,7 +217,7 @@ int main(){
 		input_weights >> weights[i];
 		++i;
 	}
-
+	std::cout << i << std::endl;
 	// Visualize
 	MLMatrix< double > weight_matrix = Eigen::Map< MLMatrix< double > >( weights.data(),N_hidden_1,28*28 );
 	weight_matrix.transposeInPlace();
@@ -249,7 +251,11 @@ int main(){
 		namedWindow( "Classification", WINDOW_OPENGL );
 	}
 
+	//MLMatrix<double> probs = net.forwardpass(images);
+
 	for (uint idx = 0; idx < N_images; ++idx){
+
+	//	std::cout << probs.col(idx).transpose() << std::endl;
 
 		if (INTERACTIVE_FLAG){
 

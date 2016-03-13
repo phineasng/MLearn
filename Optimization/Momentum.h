@@ -1,5 +1,5 @@
-#ifndef MLEARN_STOCHASTIC_GRADIENT_DESCENT_ROUTINE_INCLUDED
-#define MLEARN_STOCHASTIC_GRADIENT_DESCENT_ROUTINE_INCLUDED
+#ifndef MLEARN_MOMENTUM_INCLUDED
+#define MLEARN_MOMENTUM_INCLUDED
 
 // MLearn Core 
 #include <MLearn/Core>
@@ -26,33 +26,51 @@ namespace MLearn{
 					typename ScalarType = double,
 					typename UnsignedIntegerType = uint,
 					ushort VERBOSITY_REF = 0 >
-		class StochasticGradientDescent: public StochasticBase< StochasticGradientDescent<STRATEGY,ScalarType,UnsignedIntegerType,VERBOSITY_REF>,STRATEGY,ScalarType,UnsignedIntegerType >{
+		class Momentum: public StochasticBase< Momentum<STRATEGY,ScalarType,UnsignedIntegerType,VERBOSITY_REF>,STRATEGY,ScalarType,UnsignedIntegerType >{
 		private:
 			static_assert(std::is_floating_point<ScalarType>::value,"The scalar type has to be floating point!");
 			static_assert(std::is_integral<UnsignedIntegerType>::value && std::is_unsigned<UnsignedIntegerType>::value,"An unsigned integer type is required!");
 			typedef std::mt19937 RNG_TYPE;
-			typedef StochasticBase< StochasticGradientDescent<STRATEGY,ScalarType,UnsignedIntegerType,VERBOSITY_REF>,STRATEGY,ScalarType,UnsignedIntegerType > BASE_TYPE;
+			typedef StochasticBase< Momentum<STRATEGY,ScalarType,UnsignedIntegerType,VERBOSITY_REF>,STRATEGY,ScalarType,UnsignedIntegerType > BASE_TYPE;
 		public:
 			// Constructors
-			StochasticGradientDescent(): BASE_TYPE() {}
-			StochasticGradientDescent( const StochasticGradientDescent<STRATEGY,ScalarType,UnsignedIntegerType,VERBOSITY_REF>& refGradient ):BASE_TYPE(refGradient) {}
-			StochasticGradientDescent( StochasticGradientDescent<STRATEGY,ScalarType,UnsignedIntegerType,VERBOSITY_REF>&& refGradient ):BASE_TYPE(std::move(refGradient)) {}
+			Momentum(): BASE_TYPE() {}
+			Momentum( const Momentum<STRATEGY,ScalarType,UnsignedIntegerType,VERBOSITY_REF>& refGradient ):BASE_TYPE(refGradient), _momentum(refGradient._momentum) {}
+			Momentum( Momentum<STRATEGY,ScalarType,UnsignedIntegerType,VERBOSITY_REF>&& refGradient ):BASE_TYPE(std::move(refGradient)), _momentum(refGradient._momentum) {}
 			// Assignment
-			StochasticGradientDescent<STRATEGY,ScalarType,UnsignedIntegerType,VERBOSITY_REF>& operator= ( const StochasticGradientDescent<STRATEGY,ScalarType,UnsignedIntegerType,VERBOSITY_REF>& refGradient) { 
+			Momentum<STRATEGY,ScalarType,UnsignedIntegerType,VERBOSITY_REF>& operator= ( const Momentum<STRATEGY,ScalarType,UnsignedIntegerType,VERBOSITY_REF>& refGradient) { 
 				this->n_samples = refGradient.n_samples; 
 				this->tolerance = refGradient.tolerance; 
 				this->max_iter = refGradient.max_iter; 
 				this->line_search = refGradient.line_search; 
 				this->size_batch = refGradient.size_batch; 
+				_momentum = refGradient._momentum;
+				initializedFlag = false;
 				return *this; 
 			}
-			StochasticGradientDescent<STRATEGY,ScalarType,UnsignedIntegerType,VERBOSITY_REF>& operator= ( StochasticGradientDescent<STRATEGY,ScalarType,UnsignedIntegerType,VERBOSITY_REF>&& refGradient) { 
+			Momentum<STRATEGY,ScalarType,UnsignedIntegerType,VERBOSITY_REF>& operator= ( Momentum<STRATEGY,ScalarType,UnsignedIntegerType,VERBOSITY_REF>&& refGradient) { 
 				this->n_samples = refGradient.n_samples; 
 				this->tolerance = std::move(refGradient.tolerance); 
 				this->max_iter = std::move(refGradient.max_iter); 
 				this->line_search = std::move(refGradient.line_search);
-				this->size_batch = refGradient.size_batch; 
+				this->size_batch = refGradient.size_batch;  
+				_momentum = refGradient._momentum;
+				initializedFlag = false;
 				return *this; 
+			}
+			// Observers
+			ScalarType getMomentum() const {
+				return _momentum;
+			}
+			bool isInitialized() const{
+				return initializedFlag;
+			}
+			// Modifiers 
+			void setMomentum(ScalarType refMomentum){
+				_momentum = refMomentum;
+			}
+			void setInitializedFlag(bool flag){
+				initializedFlag = flag;
 			}
 			// Minimize
 			template < 	typename Cost,
@@ -62,7 +80,12 @@ namespace MLearn{
 				
 				// reallocate gradient if necessary
 				this->gradient.resize(x.size());
-				
+				if (!initializedFlag){
+					current_update = MLVector< ScalarType >::Zero(x.size());
+					initializedFlag = true;
+				}else{
+					MLEARN_ASSERT( current_update.size() == x.size(), "Size of input vector and update vectors not compatible! Set initialization flag to false!" );
+				}
 
 				Utility::VerbosityLogger<1,VERBOSITY_REF>::log( "====== STARTING: Stochastic Gradient Descent Optimization ======\n" );
 
@@ -93,8 +116,8 @@ namespace MLearn{
 
 					for ( UnsignedIntegerType i = 0; (i < n_batches) && !stopped; ++i ){
 
-
-						x -= this->line_search.LineSearch<STRATEGY,ScalarType>::template getStep<Cost,DifferentiationMode::STOCHASTIC,3,VERBOSITY_REF>(cost,x,this->gradient,-this->gradient,this->gradient_options)*(this->gradient);
+						current_update = _momentum*current_update + this->line_search.LineSearch<STRATEGY,ScalarType>::template getStep<Cost,DifferentiationMode::STOCHASTIC,3,VERBOSITY_REF>(cost,x,this->gradient,-this->gradient,this->gradient_options)*(this->gradient);
+						x -= current_update;
 						
 						this->to_sample = this->shuffled_indeces.segment(offset,this->size_batch);
 						cost.compute_gradient(x,this->gradient,this->gradient_options);
@@ -119,8 +142,9 @@ namespace MLearn{
 					
 					if ( offset >= this->n_samples ) continue;
 					
-					x -= this->line_search.LineSearch<STRATEGY,ScalarType>::template getStep<Cost,DifferentiationMode::STOCHASTIC,3,VERBOSITY_REF>(cost,x,this->gradient,-this->gradient,this->gradient_options)*(this->gradient);
-
+					current_update = _momentum*current_update + this->line_search.LineSearch<STRATEGY,ScalarType>::template getStep<Cost,DifferentiationMode::STOCHASTIC,3,VERBOSITY_REF>(cost,x,this->gradient,-this->gradient,this->gradient_options)*(this->gradient);
+					x -= current_update;
+						
 					this->to_sample = this->shuffled_indeces.segment(offset,r);
 					cost.compute_gradient(x,this->gradient,this->gradient_options);
 					
@@ -145,6 +169,10 @@ namespace MLearn{
 				Utility::VerbosityLogger<1,VERBOSITY_REF>::log( " iterations!\n" );
 				Utility::VerbosityLogger<1,VERBOSITY_REF>::log( "====== DONE:	 Stochastic Gradient Descent Optimization ======\n" );
 			}
+		private:
+			ScalarType _momentum = ScalarType(0.8);
+			MLVector<ScalarType> current_update;
+			bool initializedFlag = false;
 		};
 
 	}

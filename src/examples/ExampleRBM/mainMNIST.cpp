@@ -7,8 +7,12 @@
 #include <MLearn/NeuralNets/EBM/RBM/RBMSampler.h>
 #include <MLearn/NeuralNets/EBM/RBM/RBMCost.h>
 #include <MLearn/Optimization/StochasticGradientDescent.h>
+#include <MLearn/Optimization/AdaGrad.h>
+#include <MLearn/Optimization/AdaDelta.h>
+#include <MLearn/Optimization/Momentum.h>
 #include <MLearn/Optimization/GradientDescent.h>
 #include <MLearn/Optimization/Differentiation/Differentiator.h>
+#include <MLearn/Utility/MemoryPool/MLVectorPool.h>
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -33,6 +37,7 @@ using namespace Optimization;
 using namespace cv;
 using namespace std;
 using namespace RBMSupport;
+using namespace Utility::MemoryPool;
 
 // import MNIST - for INTEL processor (or other little-endian processors)
 void importMNIST( MLMatrix< FLOAT_TYPE >& images, MLMatrix< FLOAT_TYPE >& output ){
@@ -240,35 +245,42 @@ int main(){
 	constexpr RBMUnitType visible = RBMUnitType::BERNOULLI;
 	constexpr RBMUnitType hidden = RBMUnitType::BERNOULLI;
 	constexpr Regularizer reg = Regularizer::NONE;   
-	constexpr RBMTrainingMode mode = RBMTrainingMode::PERSISTENT_CONTRASTIVE_DIVERGENCE;
+	constexpr RBMTrainingMode mode = RBMTrainingMode::CONTRASTIVE_DIVERGENCE;
 	MLVector<FLOAT_TYPE> grad_tmp(N_params);
 	RegularizerOptions<FLOAT_TYPE> opt;
-	opt._l2_param = 0.01;
+	opt._l2_param = 0.005;
 	opt._l1_param = 0.001;
 	RBMSampler<FLOAT_TYPE,visible,hidden> sampler(N_vis,N_hid);
 	MLVector<FLOAT_TYPE> params = 0.00005*MLVector<FLOAT_TYPE>::Random(N_params);
 	sampler.attachParameters(params);
-	RBMCost< reg, RBMSampler<FLOAT_TYPE,visible,hidden>, mode,10 > cost(sampler,images,opt,grad_tmp);
+	RBMCost< reg, RBMSampler<FLOAT_TYPE,visible,hidden>, mode,1 > cost(sampler,images,opt,grad_tmp);
 
 	//sampler.setVisibleDistributionParameters(5);
-	//sampler.setHiddenDistributionParameters(5);
+	//sampler.setHiddenDistributionParameters(20);
 	
 	LineSearch< LineSearchStrategy::FIXED,double,uint > line_search(0.1);
-	Optimization::StochasticGradientDescent<LineSearchStrategy::FIXED,double,uint,0> minimizer;
-	minimizer.setMaxIter(60);
+	//Optimization::StochasticGradientDescent<LineSearchStrategy::FIXED,double,uint,0> minimizer;
+	//Optimization::AdaGrad<LineSearchStrategy::FIXED,double,uint,0> minimizer;
+	//Optimization::AdaDelta<double,uint,0> minimizer;
+	Optimization::Momentum<LineSearchStrategy::FIXED,double,uint,0> minimizer;
+	minimizer.setMaxIter(600);
 	minimizer.setMaxEpoch(1);
-	minimizer.setSizeBatch(2);
+	minimizer.setSizeBatch(100);
 	minimizer.setNSamples(N_images);
 	minimizer.setLineSearchMethod(line_search);
 	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 	minimizer.setSeed(seed);
-	std::cout << "Start) Average Free energy = " << cost.evaluate(params) << std::endl;
+	//std::cout << "Start) Average Free energy = " << cost.evaluate(params) << std::endl;
 	namedWindow( WINDOW_NAME, WINDOW_OPENGL );
 	show_filters( params, N_hid );
 
-	for ( uint i = 1; i <= 100; ++i ){
+	for ( uint i = 1; i <= 20; ++i ){
+		//auto start_time = chrono::high_resolution_clock::now();
 		minimizer.minimize(cost,params);
-		if (!(i%10))
+		minimizer.setInitializedFlag(false); // for AdaGrad, AdaDelta and Momentum
+		//auto end_time = chrono::high_resolution_clock::now();
+		//std::cout << std::chrono::duration_cast<chrono::microseconds>(end_time - start_time).count() << ":"<< std::endl;
+		if (!(i%5))
 			std::cout << i <<")Average Free energy = " << cost.evaluate(params) << std::endl;
 		else
 			std::cout << i << std::endl;

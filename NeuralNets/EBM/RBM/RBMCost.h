@@ -34,7 +34,7 @@ namespace MLearn{
 					auto& bias_hidden = rbm.bias_hidden;
 					auto binary_op = [](const typename RBM::SCALAR& s1, const typename RBM::SCALAR& s2){
 						typename RBM::SCALAR sum = s1 + s2; 
-						if (sum > 0)
+						if (sum < 0)
 							return static_cast<typename RBM::SCALAR>( std::log(1+std::exp(sum)) );
 						else 
 							return static_cast<typename RBM::SCALAR>( std::log(1+std::exp(-sum)) + sum );

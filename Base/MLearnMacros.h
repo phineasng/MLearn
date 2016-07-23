@@ -23,28 +23,32 @@
 
 // ASSERT
 #define MLEARN_ASSERT(x,msg)\
-	if (!(x)){\
-		std::cerr << "ERROR in '" << __func__ << "()': " << msg << "\n";\
-		std::cerr << "\tAssert failed: " <<  #x << "\n";\
-		throw( std::runtime_error( "An error occured. Check your error stream!" ) );\
-	}
+	do{\
+		if (!(x)){\
+			std::cerr << "ERROR in '" << __func__ << "()': " << msg << "\n";\
+			std::cerr << "\tAssert failed: " <<  #x << "\n";\
+			throw( std::runtime_error( "An error occured. Check your error stream!" ) );\
+		}\
+	}while(0)
 
 // WARNING
 #define MLEARN_WARNING(x,msg)\
-	if (!(x)){\
-		std::cerr << "WARNING in '" << __func__ << "()': " << msg << "\n";\
-		std::cerr << "\tCheck failed: " <<  #x << "\n";\
-	}
+	do{\
+		if (!(x)){\
+			std::cerr << "WARNING in '" << __func__ << "()': " << msg << "\n";\
+			std::cerr << "\tCheck failed: " <<  #x << "\n";\
+		}\
+	}while(0)
 
 // ERROR MESSAGE
 #define MLEARN_ERROR_MESSAGE(msg)\
-	{\
+	do{\
 		std::cerr << "ERROR in '" << __func__ << "()': " << msg << "\n";\
 		throw( std::runtime_error( "An error occured. Check your error stream!" ) );\
-	}
+	}while(0)
 
 // WARNING MESSAGE
-#define MLEARN_WARNING_MESSAGE(msg) { std::cerr << "WARNING in '" << __func__ << "()': " << msg << "\n"; }
+#define MLEARN_WARNING_MESSAGE(msg) do{ std::cerr << "WARNING in '" << __func__ << "()': " << msg << "\n"; }while(0)
 
 #else
 #define MLEARN_ASSERT(x,msg)
@@ -55,11 +59,11 @@
 
 // FORCED ERROR MESSAGE
 #define MLEARN_FORCED_ERROR_MESSAGE(msg)\
-	{\
+	do{\
 		std::cerr << "ERROR in '" << __func__ << "()': " << msg << "\n";\
 		throw( std::runtime_error( "An error occured. Check your error stream!" ) );\
-	}
+	}while(0)
 // FORCED WARNING MESSAGE
-#define MLEARN_FORCED_WARNING_MESSAGE(msg) { std::cerr << "WARNING in '" << __func__ << "()': " << msg << "\n"; }
+#define MLEARN_FORCED_WARNING_MESSAGE(msg) do{ std::cerr << "WARNING in '" << __func__ << "()': " << msg << "\n"; }while(0)
 
 #endif 

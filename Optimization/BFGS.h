@@ -7,6 +7,7 @@
 // Optimization includes
 #include "CostFunction.h"
 #include "Differentiation/Differentiator.h"
+#include "LineSearch.h"
 
 // MLearn utilities
 #include <MLearn/Utility/VerbosityLogger.h>

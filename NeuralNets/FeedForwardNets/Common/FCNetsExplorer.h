@@ -4,6 +4,7 @@
 // MLearn includes
 #include <MLearn/Core>
 #include "../../ActivationFunction.h"
+#include "../../CommonImpl.h"
 
 // STL
 #include <random>
@@ -34,7 +35,7 @@ namespace MLearn{
 				}
 				template < 	typename WeightType,
 							typename DERIVED_BOOL >
-				static inline void process_derivatives( MLVector<WeightType>& derivatives ,Eigen::VectorBlock<DERIVED_BOOL> dropped){static_assert( std::is_floating_point<WeightType>::value,"The scalar type has to be floating point!");}
+				static inline void process_derivatives( Eigen::Ref< MLVector<WeightType> > derivatives ,Eigen::VectorBlock<DERIVED_BOOL> dropped){static_assert( std::is_floating_point<WeightType>::value,"The scalar type has to be floating point!");}
 			};
 			template <>
 			struct UnitProcessor<true>{
@@ -59,39 +60,13 @@ namespace MLearn{
 				}
 				template < 	typename WeightType,
 							typename DERIVED_BOOL >
-				static inline void process_derivatives( MLVector<WeightType>& derivatives ,Eigen::VectorBlock<DERIVED_BOOL> dropped){
+				static inline void process_derivatives( Eigen::Ref< MLVector<WeightType> > derivatives ,Eigen::VectorBlock<DERIVED_BOOL> dropped){
 					static_assert( std::is_floating_point<WeightType>::value,"The scalar type has to be floating point!");
 					for ( decltype(derivatives.size()) idx = 0; idx < derivatives.size(); ++idx ){
 						if ( dropped[idx] ){
 							derivatives[idx] = WeightType(0);
 						}
 					}
-				}
-			};
-
-			/*!
-			*	\brief		Helper class to compute the derivative of the activation functions.
-			*	\details	Useful for the logistic activation since it 
-			*				can be computed efficiently without calling 
-			*				the activation function derivative
-			*				(but knowing the activation function evaluation)
-			*	\author 	phineasng
-			*
-			*/
-			template < ActivationType TYPE >
-			struct ActivationDerivativeWrapper{
-				template < 	typename DERIVED >
-				static inline void derive( Eigen::VectorBlock<DERIVED> pre_activations, Eigen::VectorBlock<DERIVED> activations, MLVector<typename DERIVED::Scalar>& derivatives ){
-					static_assert( std::is_floating_point<typename DERIVED::Scalar>::value,"The scalar type has to be floating point!");
-					derivatives = pre_activations.unaryExpr(std::pointer_to_unary_function<typename DERIVED::Scalar,typename DERIVED::Scalar>(ActivationFunction<TYPE>::first_derivative));
-				}
-			};
-			template <>
-			struct ActivationDerivativeWrapper<ActivationType::LOGISTIC>{
-				template < 	typename DERIVED >
-				static inline void derive( Eigen::VectorBlock<DERIVED> pre_activations, Eigen::VectorBlock<DERIVED> activations, MLVector<typename DERIVED::Scalar>& derivatives ){
-					static_assert( std::is_floating_point<typename DERIVED::Scalar>::value,"The scalar type has to be floating point!");
-					derivatives = activations - activations.cwiseProduct(activations);
 				}
 			};
 
@@ -123,6 +98,7 @@ namespace MLearn{
 					activations( refLayers.array().sum() ),
 					pre_activations( refLayers.array().sum() ),
 					dropped( refLayers.array().sum() ),
+					derivatives( refLayers.maxCoeff() ),
 					rng(static_cast<std::mt19937::result_type>(std::chrono::system_clock::now().time_since_epoch().count())),
 					b_dist(0.5) {
 						MLEARN_ASSERT( layers.size() > 1, "Not a deep architecture: at least 2 layers are needed for the algorithm to work!" );
@@ -189,8 +165,8 @@ namespace MLearn{
 					MLEARN_ASSERT( gradient_output.size() == layers[layers.size()-1], "Output layer not consistent with the given gradient!" );
 					MLEARN_ASSERT( gradient_weights.size() == weights.size(), "Weights size and respective gradient size not compatible!" );
 
-					// declare refs to derived: if DERIVED_* are expressions then they will be evaluated otherwise we can access its data without copies
-					const Eigen::Ref<const Eigen::Matrix< typename DERIVED::Scalar, DERIVED::RowsAtCompileTime, DERIVED::ColsAtCompileTime > >& ref_weights(weights);
+					// 
+					const DERIVED& ref_weights = weights.derived();
 					
 					decltype(activations.size()) idx = layers.size()-1;
 					decltype(activations.size()) idx_m1 = idx-1;
@@ -199,8 +175,8 @@ namespace MLearn{
 					decltype(ref_weights.size()) tmp = layers[idx_m1]*layers[idx];
 
 					// compute delta output layer and assign it to the gradientof the last biases
-					ActivationDerivativeWrapper<OutputLayerActivation>::derive( pre_activations.segment(offset,layers[idx]),activations.segment(offset,layers[idx]),derivatives );
-					gradient_weights.segment(offset_weights,layers[idx]) = gradient_output.cwiseProduct(derivatives);
+					InternalImpl::DerivativeWrapper<OutputLayerActivation>::template derive<WeightType>( pre_activations.segment(offset,layers[idx]),activations.segment(offset,layers[idx]),derivatives.head(layers[idx]) );
+					gradient_weights.segment(offset_weights,layers[idx]) = gradient_output.cwiseProduct(derivatives.head(layers[idx]));
 					// ... and get a view of the last delta
 					Eigen::Map< const MLVector<WeightType> > delta_p1( gradient_weights.segment(offset_weights,layers[idx]).data(), layers[idx] );
 
@@ -225,9 +201,9 @@ namespace MLearn{
 
 						tmp = layers[idx_m1]*layers[idx];
 
-						ActivationDerivativeWrapper<HiddenLayerActivation>::derive( pre_activations.segment(offset,layers[idx]),activations.segment(offset,layers[idx]),derivatives );
-						UnitProcessor<DROPOUT>::template process_derivatives<WeightType>(derivatives,dropped.segment(offset,layers[idx]));
-						gradient_weights.segment(offset_weights,layers[idx]) = (weight_matrix.transpose()*delta_p1).cwiseProduct( derivatives );
+						InternalImpl::DerivativeWrapper<HiddenLayerActivation>::template derive<WeightType>( pre_activations.segment(offset,layers[idx]),activations.segment(offset,layers[idx]),derivatives.head(layers[idx]) );
+						UnitProcessor<DROPOUT>::template process_derivatives<WeightType>(derivatives.head(layers[idx]) ,dropped.segment(offset,layers[idx]));
+						gradient_weights.segment(offset_weights,layers[idx]) = (weight_matrix.transpose()*delta_p1).cwiseProduct( derivatives.head(layers[idx])  );
 						new (&delta_p1) Eigen::Map< const MLVector<WeightType> >( gradient_weights.segment(offset_weights,layers[idx]).data(), layers[idx] );
 						
 						offset_weights -= tmp;
@@ -254,6 +230,7 @@ namespace MLearn{
 					activations.resize(layers.array().sum());
 					pre_activations.resize(layers.array().sum());
 					dropped.resize(layers.array().sum());
+					derivatives.resize( layers.maxCoeff() );
 				}
 				// OBSERVERS
 				WeightType getDropoutProbability() const{

@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <math.h>
+#include <time.h>
 #include <cassert>
 #include <vector>
 #include <math.h>
@@ -33,10 +34,21 @@ namespace MLearn{
     class KMeans
     {
     private:
-      const int K_; // number of clusters
-      const int n_dims_, n_points_, max_iterations_;
+
+      const int max_iterations_;
       std::vector<int> labels_;
       Eigen::MatrixXf centroids_;
+
+    public:
+
+      // constructor
+      KMeans(int max_iterations = 1e3):
+      max_iterations_(max_iterations)
+      {
+        srand(time(NULL)); // provide seed to randomizer in k-means++
+     }
+
+    private:
 
       // return ID of nearest centroid 
       int getIDNearestCentroid(const Eigen::VectorXf& point, const int& k_max)
@@ -44,7 +56,7 @@ namespace MLearn{
         float dist;
         float min_dist = INFINITY;
         int id_cluster_center = 0;
-        //assert(k_max <= K_);
+        //assert(k_max <= centroids_.cols());
         for(size_t k = 0; k < k_max; ++k)
         {	
           dist = getDistance(point,centroids_.col(k));
@@ -64,15 +76,15 @@ namespace MLearn{
         centroids_.setZero();
 
         // choose one center uniformly at random from among the data points
-        centroids_.col(0) = points.col((rand() % n_points_));
+        centroids_.col(0) = points.col((rand() % labels_.size()));
 
-        for(size_t k = 1; k < K_; ++k)
+        for(size_t k = 1; k < centroids_.cols(); ++k)
         {	
           // for each point, compute squared distance and put as probability weight
-          std::vector<float> weight_sum(n_points_);
+          std::vector<float> weight_sum(labels_.size());
           
           float weight_sum_i = 0;
-          for(size_t i = 0; i < n_points_; ++i)
+          for(size_t i = 0; i < labels_.size(); ++i)
           {
             // get squared dist between point and nearest center
             int nearest_centroid_id = getIDNearestCentroid(points.col(i), k);
@@ -83,7 +95,7 @@ namespace MLearn{
           // generate a random float from a 
           // uniform distribution from 0 to weights_sum(end)
           float p_rand = static_cast <float> (rand()) / (static_cast <float>
-                      (RAND_MAX / weight_sum[n_points_ - 1]));
+                      (RAND_MAX / weight_sum[labels_.size() - 1]));
                       
           // lowest idx such that p_rand < weight_sum[idx]
           int idx = std::upper_bound(weight_sum.begin(), weight_sum.end(), p_rand)
@@ -96,23 +108,22 @@ namespace MLearn{
       // update labels to nearest centroid
       void updateLabels(const Eigen::MatrixXf& points)
       {
-        for(size_t i = 0; i < n_points_; ++i)
-          labels_[i] = getIDNearestCentroid(points.col(i),K_);
+        for(size_t i = 0; i < labels_.size(); ++i)
+          labels_[i] = getIDNearestCentroid(points.col(i),centroids_.cols());
       }
 
       // update centroid positions according to labels
       void updateCentroids(const Eigen::MatrixXf& points)
       {
-        Eigen::MatrixXf centroids_ = Eigen::MatrixXf::Zero(n_dims_, K_);
-
-        std::vector<int> counter(K_,0);
-        for(size_t i = 0; i < n_points_; ++i)
+        centroids_.setZero();
+        std::vector<int> counter(centroids_.cols(),0);
+        for(size_t i = 0; i < labels_.size(); ++i)
         {
           int k = labels_[i];
           centroids_.col(k) += points.col(i);
           counter[k] ++; 
         }
-        for(size_t k = 0; k < K_; ++k)
+        for(size_t k = 0; k < centroids_.cols(); ++k)
         {
           assert(counter[k] > 0);
           centroids_.col(k) /= counter[k];
@@ -127,9 +138,9 @@ namespace MLearn{
         while(change && iter < max_iterations_)
         {	
           change = false;	
-          for (size_t i = 0; i < n_points_; ++i)
+          for (size_t i = 0; i < labels_.size(); ++i)
           {
-            int new_label = getIDNearestCentroid(points.col(i),K_);
+            int new_label = getIDNearestCentroid(points.col(i),centroids_.cols());
             if (new_label != labels_[i])
             {
               labels_[i] = new_label;
@@ -145,30 +156,23 @@ namespace MLearn{
 
     public:
 
-      // constructor
-      KMeans(const int& K, const int& n_points, const int& n_dims, 
-      const int& max_iterations):
-      K_(K), n_points_(n_points), n_dims_(n_dims), max_iterations_(max_iterations)
-      {
-        assert(K_ <= n_points);
-        centroids_ = Eigen::MatrixXf(n_dims_, K_);
-        labels_ = std::vector<int>(n_points_, -1);
-      }
-
-
       // get inertia to estimate how good clustering performs
       float getInertia(const Eigen::MatrixXf& points)
       {
         float sum = 0;
-        for(size_t i = 0; i < n_points_; ++i)
+        for(size_t i = 0; i < labels_.size(); ++i)
           sum += getDistance(points.col(i),centroids_.col(labels_[i]));
         return sum;
       }
 
       // run N times with different centroid seeds and keep the best result
-      void run(const Eigen::MatrixXf& points, int N = 1)
+      void run(const Eigen::MatrixXf& points, int K, int N = 1)
       {
-        Eigen::MatrixXf best_centroids(K_, n_dims_);
+        assert(K <= points.cols());
+        centroids_ = Eigen::MatrixXf(points.rows(), K);
+        labels_ = std::vector<int>(points.cols(), -1);
+ 
+        Eigen::MatrixXf best_centroids(centroids_.rows(),centroids_.cols());
         float min_inertia = INFINITY;
         // Utility::VerbosityLogger<1,VERBOSITY_REF>::log(
             // "====== STARTING: KMeans Clustering  ======\n" );
@@ -203,6 +207,11 @@ namespace MLearn{
         // Utility::VerbosityLogger<1,VERBOSITY_REF>::log( 
             // "====== DONE: KMeans Clustering  ======\n" );
 
+      }
+      
+      void setInitialCentroids(const Eigen::MatrixXf& centroids)
+      {
+        centroids_ = centroids;
       }
 
       // get cluster label for each sample

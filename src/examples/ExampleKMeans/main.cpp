@@ -13,7 +13,7 @@ Eigen::MatrixXf PointsInCircle(int N)
 {
   Eigen::MatrixXf points(2,N);
   std::default_random_engine generator;
-  std::uniform_real_distribution<double> rand_angle(0.0,2.0*M_PI);
+  std::uniform_real_distribution<double> rand_angle(0.0,2.0 * M_PI);
   std::uniform_real_distribution<double> rand_radius(0.0,50.0);
   for(size_t i = 0; i < N; ++i)
   {
@@ -21,6 +21,7 @@ Eigen::MatrixXf PointsInCircle(int N)
     double radius = rand_radius(generator);
     points.col(i) << (float)(50 + radius * cos(angle)),
         (float)(50 + radius * sin(angle));
+
   }
   std::cout<<points.rows()<<", "<<points.cols()<<std::endl;
   return points;
@@ -61,8 +62,8 @@ int main(int argc, char* argv[]){
   int K = std::atoi(argv[2]);
   Eigen::MatrixXf points = PointsInCircle(n_points);
   // 2) cluster them using kmeans
-  KMeans clustering(K, n_points, points.rows(), 100);
-  clustering.run(points, 10);
+  KMeans clustering(100);
+  clustering.run(points,K,10);// run 10 times, keep the best result
   // 3) display results and stats (e.g. time)
   printToFile(points,clustering.getLabels(),
       clustering.getClusterCentroids());

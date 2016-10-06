@@ -8,9 +8,10 @@
 #include <math.h>
 #include <stdlib.h>
 #include <algorithm>
-
+#include <utility>
+#include <type_traits>
 #include <MLearn/Core>
-
+#include <MLearn/Utility/VerbosityLogger.h>
 
 // squared euclidian distance between two points
 float getDistance(const Eigen::VectorXf& a, const Eigen::VectorXf& b)
@@ -42,7 +43,7 @@ namespace MLearn{
       {
         float dist;
         float min_dist = INFINITY;
-        int id_cluster_center;
+        int id_cluster_center = 0;
         //assert(k_max <= K_);
         for(size_t k = 0; k < k_max; ++k)
         {	
@@ -100,18 +101,18 @@ namespace MLearn{
       }
 
       // update centroid positions according to labels
-      void updateCentroids(const Eigen::MatrixXf& points);
+      void updateCentroids(const Eigen::MatrixXf& points)
       {
-        Eigen::MatrixXf centroids_ = Eigen::MatrixXf::Zero(X.rows(), K);
+        Eigen::MatrixXf centroids_ = Eigen::MatrixXf::Zero(n_dims_, K_);
 
-        std::vector<int> counter(K,0);
-        for(size_t i = 0; i < labels.size(); ++i)
+        std::vector<int> counter(K_,0);
+        for(size_t i = 0; i < n_points_; ++i)
         {
-          int k = labels[i];
-          centroids_.col(k) += X.col(i);
+          int k = labels_[i];
+          centroids_.col(k) += points.col(i);
           counter[k] ++; 
         }
-        for(size_t k = 0; k < K; ++k)
+        for(size_t k = 0; k < K_; ++k)
         {
           assert(counter[k] > 0);
           centroids_.col(k) /= counter[k];
@@ -169,13 +170,13 @@ namespace MLearn{
       {
         Eigen::MatrixXf best_centroids(K_, n_dims_);
         float min_inertia = INFINITY;
-        Utility::VerbosityLogger<1,VERBOSITY_REF>::log(
-            "====== STARTING: KMeans Clustering  ======\n" );
-
-        Utility::VerbosityLogger<1,VERBOSITY_REF>::log(" Running KMeans ");
-        Utility::VerbosityLogger<1,VERBOSITY_REF>::log(N);
-        Utility::VerbosityLogger<1,VERBOSITY_REF>::log(" times.\n");
-
+        // Utility::VerbosityLogger<1,VERBOSITY_REF>::log(
+            // "====== STARTING: KMeans Clustering  ======\n" );
+// 
+        // Utility::VerbosityLogger<1,VERBOSITY_REF>::log(" Running KMeans ");
+        // Utility::VerbosityLogger<1,VERBOSITY_REF>::log(N);
+        // Utility::VerbosityLogger<1,VERBOSITY_REF>::log(" times.\n");
+// 
         for(size_t n = 0; n < N; ++n)
         {
           // initialize using k++
@@ -184,11 +185,11 @@ namespace MLearn{
           runAfterInitialization(points);
           // if inertia is min, store final centroids
           float inertia = getInertia(points);
-          Utility::VerbosityLogger<2,VERBOSITY_REF>::log( n );
-          Utility::VerbosityLogger<2,VERBOSITY_REF>::log( ") Final inertia =  " );
-          Utility::VerbosityLogger<2,VERBOSITY_REF>::log( inertia );
-          Utility::VerbosityLogger<2,VERBOSITY_REF>::log( "\n" );
-
+          // Utility::VerbosityLogger<2,VERBOSITY_REF>::log( n );
+          // Utility::VerbosityLogger<2,VERBOSITY_REF>::log( ") Final inertia =  " );
+          // Utility::VerbosityLogger<2,VERBOSITY_REF>::log( inertia );
+          // Utility::VerbosityLogger<2,VERBOSITY_REF>::log( "\n" );
+// 
           if(inertia < min_inertia)
           {
             min_inertia = inertia;
@@ -199,8 +200,8 @@ namespace MLearn{
         centroids_ = best_centroids;
         // update labels accordingly
         updateLabels(points);
-        Utility::VerbosityLogger<1,VERBOSITY_REF>::log( 
-            "====== DONE: KMeans Clustering  ======\n" );
+        // Utility::VerbosityLogger<1,VERBOSITY_REF>::log( 
+            // "====== DONE: KMeans Clustering  ======\n" );
 
       }
 
@@ -221,3 +222,5 @@ namespace MLearn{
   }// End Clustering namespace
 
 }// End MLearn namespace
+
+#endif

@@ -27,7 +27,7 @@ namespace MLearn{
 			public:
 				// typedefs
 				typedef WeightType 				scalar_t;
-				typedef WeightType 				index_t;
+				typedef IndexType 				index_t;
 				static const ActivationType 	HiddenActivation = HIDDEN_ACTIVATION;
 				static const ActivationType 	OutputActivation = OUTPUT_ACTIVATION;
 				static const RNNType 			CellType = CELLTYPE;
@@ -43,15 +43,20 @@ namespace MLearn{
 					outputs_pre_activation(output_size,n_states_alloc),
 					inputs(input_size,n_states_alloc),
 					grad_temp(cell.computeNWeights(input_sz,hidden_sz,output_sz)),
-					grad_hidden(hidden_sz)
+					grad_hidden(hidden_sz,RNNCellTraits<CELLTYPE>::N_cell_gradients)
 				{
 					static_assert( std::is_integral<U_INT>::value && std::is_unsigned<U_INT>::value, "Size values must be unsigned integers!" );
 				}
 				// Modifiers
-				void resetHiddenState() { internal_state = MLMatrix< WeightType >::Zero( internal_state.rows(),internal_state.cols() ); unrolled_steps = 0; }
+				void resetHiddenState() { 
+					internal_state = MLMatrix< WeightType >::Zero( internal_state.rows(),internal_state.cols() ); 
+					internal_state_pre_activation = MLMatrix< WeightType >::Zero( internal_state.rows(),internal_state.cols() ); 
+					unrolled_steps = 0;
+				}
 				void attachWeightsToCell( Eigen::Ref< const MLVector< WeightType > > weights ) { cell.attachWeights(weights, input_size,hidden_size,output_size); }
 				void setHiddenState( const Eigen::Ref< MLMatrix<WeightType> >& ref_hidden_state ) {
 					MLEARN_ASSERT( (ref_hidden_state.cols() ==  RNNCellTraits<CELLTYPE>::N_internal_states) &&  (ref_hidden_state.rows() == hidden_size), "Wrong size for the hidden state!" );
+					resetHiddenState();
 					internal_state.leftCols(RNNCellTraits<CELLTYPE>::N_internal_states) = ref_hidden_state;
 				}
 				template < typename U_INT >
@@ -124,6 +129,7 @@ namespace MLearn{
 						resetHiddenState();
 						unrolled_steps = delay + output_steps;
 					} 	  
+
 					IndexType curr_step = 0;
 					IndexType start_col_old = 0;
 					IndexType start_col = RNNCellTraits<CELLTYPE>::N_internal_states;
@@ -198,7 +204,7 @@ namespace MLearn{
 															internal_state.block(0,start_col,hidden_size,RNNCellTraits<CELLTYPE>::N_internal_states) );
 						
 						cell.updateGradientOutputWeights(_grad_weights,grad_temp);
-						cell.compute_hidden_gradient_from_output(grad_hidden);
+						cell.compute_hidden_gradient_from_output(grad_hidden,internal_state.block(0,start_col,hidden_size,RNNCellTraits<CELLTYPE>::N_internal_states));
 
 						// backpropagate through unrolled steps with only hidden states
 						while ((hidden_step > unrolled_input_steps) && (hidden_step>0)){
@@ -207,10 +213,8 @@ namespace MLearn{
 																internal_state_pre_activation.block(0,start_col,hidden_size,RNNCellTraits<CELLTYPE>::N_internal_states), 
 																internal_state.block(0,start_col,hidden_size,RNNCellTraits<CELLTYPE>::N_internal_states), 
 																internal_state.block(0,start_col_old,hidden_size,RNNCellTraits<CELLTYPE>::N_internal_states) );
-
 							cell.updateGradientHiddenWeights(_grad_weights,grad_temp);
 							cell.compute_hidden_gradient_from_hidden(grad_hidden,internal_state.block(0,start_col,hidden_size,RNNCellTraits<CELLTYPE>::N_internal_states));
-
 							hidden_step = hidden_step_old;
 							--hidden_step_old;
 							start_col = start_col_old;
@@ -228,6 +232,7 @@ namespace MLearn{
 							cell.updateGradientHiddenWeights(_grad_weights,grad_temp);
 							cell.updateGradientInputWeights(_grad_weights,grad_temp);
 							cell.compute_hidden_gradient_from_hidden(grad_hidden,internal_state.block(0,start_col,hidden_size,RNNCellTraits<CELLTYPE>::N_internal_states));
+							
 							hidden_step = hidden_step_old;
 							--hidden_step_old;
 							start_col = start_col_old;
@@ -288,6 +293,9 @@ namespace MLearn{
 				IndexType getNWeights() const{
 					return cell.computeNWeights(input_size, hidden_size, output_size);
 				}
+				const MLVector<WeightType> getLastHiddenGradient() const{
+					return grad_hidden;
+				}
 			private:
 				// sizes
 				const IndexType input_size, output_size, hidden_size;
@@ -303,7 +311,7 @@ namespace MLearn{
 				MLMatrix< WeightType > inputs;
 				// Temporaries
 				MLVector< WeightType > grad_temp;
-				MLVector< WeightType > grad_hidden;
+				MLMatrix< WeightType > grad_hidden;
 				// Cell - for specialized routines
 				RecurrentImpl::RNNCell< WeightType,CELLTYPE,HIDDEN_ACTIVATION,OUTPUT_ACTIVATION > cell;
 

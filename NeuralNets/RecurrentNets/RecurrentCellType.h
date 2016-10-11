@@ -22,16 +22,19 @@ namespace MLearn{
 			struct RNNCellTraits{
 				static const uint N_internal_states = 1; 	// denote the number of internal states useful for cell computations, 
 															// e.g. LSTM has 5 (hidden, preprocessed cell state, processed cell state, input gate result, forget gate result)
+				static const uint N_cell_gradients = 1; 	// denote the number of gradients to be backpropagated
 			};
 
 			template <>
 			struct RNNCellTraits< RNNType::LSTM >{
 				static const uint N_internal_states = 6;
+				static const uint N_cell_gradients = 2;
 			};
 
 			template <>
 			struct RNNCellTraits< RNNType::GRU >{
 				static const uint N_internal_states = 4;
+				static const uint N_cell_gradients = 2;
 			};
 
 			namespace RecurrentImpl{
@@ -290,7 +293,7 @@ namespace MLearn{
 
 					}
 
-					void compute_hidden_gradient_from_output(Eigen::Ref< MLMatrix<WeightType> > grad_hidden){
+					void compute_hidden_gradient_from_output(Eigen::Ref< MLMatrix<WeightType> > grad_hidden, const Eigen::Ref< const MLMatrix<WeightType> > hidden ){
 						
 						grad_hidden = W_hid_out.transpose()*grad_b_out;
 
@@ -481,6 +484,7 @@ namespace MLearn{
 						curr_index += output_sz;
 						this->n_output_weights = curr_index - this->offset_output_weights ;
 
+						cell_state_gradient.resize(hidden_sz);
 					}
 					// compute - forward
 					void step_input_output( const Eigen::Ref< const MLVector<WeightType> > input, Eigen::Ref< MLVector<WeightType> > output, Eigen::Ref< MLMatrix<WeightType> > hidden ) const{
@@ -492,8 +496,8 @@ namespace MLearn{
 						Eigen::Ref< MLVector<WeightType> > h(hidden.col(hidden_idx));
 						Eigen::Ref< MLVector<WeightType> > i(hidden.col(input_idx));
 						Eigen::Ref< MLVector<WeightType> > f(hidden.col(forget_idx));
-						Eigen::Ref< MLVector<WeightType> > C_tilde(hidden.col(preproc_cell_idx));
-						Eigen::Ref< MLVector<WeightType> > C(hidden.col(proc_cell_idx));
+						Eigen::Ref< MLVector<WeightType> > C_tilde(hidden.col(candidate_idx));
+						Eigen::Ref< MLVector<WeightType> > C(hidden.col(cell_idx));
 						Eigen::Ref< MLVector<WeightType> > o(hidden.col(output_idx));
 
 						f.noalias() = W_forget_in*input + W_forget_hid*h + b_forget;
@@ -525,8 +529,8 @@ namespace MLearn{
 						Eigen::Ref< MLVector<WeightType> > h(hidden.col(hidden_idx));
 						Eigen::Ref< MLVector<WeightType> > i(hidden.col(input_idx));
 						Eigen::Ref< MLVector<WeightType> > f(hidden.col(forget_idx));
-						Eigen::Ref< MLVector<WeightType> > C_tilde(hidden.col(preproc_cell_idx));
-						Eigen::Ref< MLVector<WeightType> > C(hidden.col(proc_cell_idx));
+						Eigen::Ref< MLVector<WeightType> > C_tilde(hidden.col(candidate_idx));
+						Eigen::Ref< MLVector<WeightType> > C(hidden.col(cell_idx));
 						Eigen::Ref< MLVector<WeightType> > o(hidden.col(output_idx));
 
 						f.noalias() = W_forget_in*input + W_forget_hid*h + b_forget;
@@ -554,8 +558,8 @@ namespace MLearn{
 						Eigen::Ref< MLVector<WeightType> > h(hidden.col(hidden_idx));
 						Eigen::Ref< MLVector<WeightType> > i(hidden.col(input_idx));
 						Eigen::Ref< MLVector<WeightType> > f(hidden.col(forget_idx));
-						Eigen::Ref< MLVector<WeightType> > C_tilde(hidden.col(preproc_cell_idx));
-						Eigen::Ref< MLVector<WeightType> > C(hidden.col(proc_cell_idx));
+						Eigen::Ref< MLVector<WeightType> > C_tilde(hidden.col(candidate_idx));
+						Eigen::Ref< MLVector<WeightType> > C(hidden.col(cell_idx));
 						Eigen::Ref< MLVector<WeightType> > o(hidden.col(output_idx));
 
 						f.noalias() = W_forget_hid*h + b_forget;
@@ -584,8 +588,8 @@ namespace MLearn{
 						Eigen::Ref< MLVector<WeightType> > h(hidden.col(hidden_idx));
 						Eigen::Ref< MLVector<WeightType> > i(hidden.col(input_idx));
 						Eigen::Ref< MLVector<WeightType> > f(hidden.col(forget_idx));
-						Eigen::Ref< MLVector<WeightType> > C_tilde(hidden.col(preproc_cell_idx));
-						Eigen::Ref< MLVector<WeightType> > C(hidden.col(proc_cell_idx));
+						Eigen::Ref< MLVector<WeightType> > C_tilde(hidden.col(candidate_idx));
+						Eigen::Ref< MLVector<WeightType> > C(hidden.col(cell_idx));
 						Eigen::Ref< MLVector<WeightType> > o(hidden.col(output_idx));
 
 						f.noalias() = W_forget_hid*h + b_forget;
@@ -629,12 +633,12 @@ namespace MLearn{
 						Eigen::Ref< MLVector<WeightType> > f(hidden.col(forget_idx));
 						Eigen::Ref< MLVector<WeightType> > f_pre(hidden_pre_activation.col(forget_idx));
 
-						Eigen::Ref< MLVector<WeightType> > C_tilde(hidden.col(preproc_cell_idx));
-						Eigen::Ref< MLVector<WeightType> > C_tilde_pre(hidden_pre_activation.col(preproc_cell_idx));
+						Eigen::Ref< MLVector<WeightType> > C_tilde(hidden.col(candidate_idx));
+						Eigen::Ref< MLVector<WeightType> > C_tilde_pre(hidden_pre_activation.col(candidate_idx));
 
-						Eigen::Ref< MLVector<WeightType> > C(hidden.col(proc_cell_idx));
-						Eigen::Ref< MLVector<WeightType> > C_post(hidden_pre_activation.col(proc_cell_idx)); // the pre-activation cell memory has to be saved, hence we use the preactivation internal state to actually store the post-activation
-						const Eigen::Ref< const MLVector<WeightType> > old_C(old_hidden.col(proc_cell_idx));
+						Eigen::Ref< MLVector<WeightType> > C(hidden.col(cell_idx));
+						Eigen::Ref< MLVector<WeightType> > C_post(hidden_pre_activation.col(cell_idx)); // the pre-activation cell memory has to be saved, hence we use the preactivation internal state to actually store the post-activation
+						const Eigen::Ref< const MLVector<WeightType> > old_C(old_hidden.col(cell_idx));
 
 						Eigen::Ref< MLVector<WeightType> > o(hidden.col(output_idx));
 						Eigen::Ref< MLVector<WeightType> > o_pre(hidden_pre_activation.col(output_idx));
@@ -676,12 +680,12 @@ namespace MLearn{
 						Eigen::Ref< MLVector<WeightType> > f(hidden.col(forget_idx));
 						Eigen::Ref< MLVector<WeightType> > f_pre(hidden_pre_activation.col(forget_idx));
 
-						Eigen::Ref< MLVector<WeightType> > C_tilde(hidden.col(preproc_cell_idx));
-						Eigen::Ref< MLVector<WeightType> > C_tilde_pre(hidden_pre_activation.col(preproc_cell_idx));
+						Eigen::Ref< MLVector<WeightType> > C_tilde(hidden.col(candidate_idx));
+						Eigen::Ref< MLVector<WeightType> > C_tilde_pre(hidden_pre_activation.col(candidate_idx));
 
-						Eigen::Ref< MLVector<WeightType> > C(hidden.col(proc_cell_idx));
-						Eigen::Ref< MLVector<WeightType> > C_post(hidden_pre_activation.col(proc_cell_idx));
-						const Eigen::Ref< const MLVector<WeightType> > old_C(old_hidden.col(proc_cell_idx));
+						Eigen::Ref< MLVector<WeightType> > C(hidden.col(cell_idx));
+						Eigen::Ref< MLVector<WeightType> > C_post(hidden_pre_activation.col(cell_idx));
+						const Eigen::Ref< const MLVector<WeightType> > old_C(old_hidden.col(cell_idx));
 
 						Eigen::Ref< MLVector<WeightType> > o(hidden.col(output_idx));
 						Eigen::Ref< MLVector<WeightType> > o_pre(hidden_pre_activation.col(output_idx));
@@ -735,7 +739,7 @@ namespace MLearn{
 
 					}
 
-					void compute_grad_hidden_hidden( 	const Eigen::Ref< const MLVector<WeightType> > grad_hidden, 
+					void compute_grad_hidden_hidden( 	Eigen::Ref< MLMatrix<WeightType> > grad_hidden, 
 														const Eigen::Ref< const MLMatrix<WeightType> > hidden_pre_activation, 
 														const Eigen::Ref< const MLMatrix<WeightType> > hidden, 
 														const Eigen::Ref< const MLMatrix<WeightType> > old_hidden ){
@@ -754,39 +758,40 @@ namespace MLearn{
 						const Eigen::Ref< const MLVector<WeightType> > f(hidden.col(forget_idx));
 						const Eigen::Ref< const MLVector<WeightType> > f_pre(hidden_pre_activation.col(forget_idx));
 
-						const Eigen::Ref< const MLVector<WeightType> > C_tilde(hidden.col(preproc_cell_idx));
-						const Eigen::Ref< const MLVector<WeightType> > C_tilde_pre(hidden_pre_activation.col(preproc_cell_idx));
+						const Eigen::Ref< const MLVector<WeightType> > C_tilde(hidden.col(candidate_idx));
+						const Eigen::Ref< const MLVector<WeightType> > C_tilde_pre(hidden_pre_activation.col(candidate_idx));
 
-						const Eigen::Ref< const MLVector<WeightType> > C(hidden.col(proc_cell_idx));
-						const Eigen::Ref< const MLVector<WeightType> > C_post(hidden_pre_activation.col(proc_cell_idx));
-						const Eigen::Ref< const MLVector<WeightType> > old_C(old_hidden.col(proc_cell_idx));
+						const Eigen::Ref< const MLVector<WeightType> > C(hidden.col(cell_idx));
+						const Eigen::Ref< const MLVector<WeightType> > C_post(hidden_pre_activation.col(cell_idx));
+						const Eigen::Ref< const MLVector<WeightType> > old_C(old_hidden.col(cell_idx));
 
 						const Eigen::Ref< const MLVector<WeightType> > o(hidden.col(output_idx));
 						const Eigen::Ref< const MLVector<WeightType> > o_pre(hidden_pre_activation.col(output_idx));
 
-						InternalImpl::DerivativeWrapper<ActivationType::LOGISTIC>::template derive<WeightType>(o_pre,o,grad_b_output);
-						grad_b_output = grad_b_output.cwiseProduct( C_post );
-						grad_b_output = grad_b_output.cwiseProduct( grad_hidden );
-						grad_W_output_hid = grad_b_output*old_h.transpose(); 
-
-						cell_state_gradient.resize(C.size());
 						InternalImpl::DerivativeWrapper<HIDDEN_ACTIVATION>::template derive<WeightType>(C,C_post,cell_state_gradient);
 						cell_state_gradient = cell_state_gradient.cwiseProduct(o);
 						cell_state_gradient = cell_state_gradient.cwiseProduct(grad_hidden);
+						grad_hidden.col(cell_idx) += cell_state_gradient;
+
+						InternalImpl::DerivativeWrapper<ActivationType::LOGISTIC>::template derive<WeightType>(o_pre,o,grad_b_output);
+						grad_b_output = grad_b_output.cwiseProduct( C_post );
+						grad_b_output = grad_b_output.cwiseProduct( grad_hidden.col(hidden_idx) );
+						grad_W_output_hid = grad_b_output*old_h.transpose(); 
+
 						InternalImpl::DerivativeWrapper<HIDDEN_ACTIVATION>::template derive<WeightType>(C_tilde_pre,C_tilde,grad_b_candidate);
 						InternalImpl::DerivativeWrapper<ActivationType::LOGISTIC>::template derive<WeightType>(i_pre,i,grad_b_input);
 						InternalImpl::DerivativeWrapper<ActivationType::LOGISTIC>::template derive<WeightType>(f_pre,f,grad_b_forget);
 
 						grad_b_candidate = grad_b_candidate.cwiseProduct( i );
-						grad_b_candidate = grad_b_candidate.cwiseProduct( cell_state_gradient );
+						grad_b_candidate = grad_b_candidate.cwiseProduct( grad_hidden.col(cell_idx) );
 						grad_W_candidate_hid = grad_b_candidate*old_h.transpose();
 
 						grad_b_input = grad_b_input.cwiseProduct( C_tilde );
-						grad_b_input = grad_b_input.cwiseProduct( cell_state_gradient );
+						grad_b_input = grad_b_input.cwiseProduct( grad_hidden.col(cell_idx) );
 						grad_W_input_hid = grad_b_input*old_h.transpose();
 
 						grad_b_forget = grad_b_forget.cwiseProduct( old_C );
-						grad_b_forget = grad_b_forget.cwiseProduct( cell_state_gradient );
+						grad_b_forget = grad_b_forget.cwiseProduct( grad_hidden.col(cell_idx) );
 						grad_W_forget_hid = grad_b_forget*old_h.transpose();
 
 					}
@@ -800,25 +805,30 @@ namespace MLearn{
 
 					}
 
-					void compute_hidden_gradient_from_hidden(Eigen::Ref< MLVector<WeightType> > grad_hidden, const Eigen::Ref< const MLMatrix<WeightType> > hidden ){
+					void compute_hidden_gradient_from_hidden(Eigen::Ref< MLMatrix<WeightType> > grad_hidden, const Eigen::Ref< const MLMatrix<WeightType> > hidden ){
 						
-						grad_hidden = 	W_output_hid.transpose()*grad_b_output +
-										W_candidate_hid.transpose()*grad_b_candidate +
-										W_input_hid.transpose()*grad_b_input + 
-										W_forget_hid.transpose()*grad_b_forget;
+						const Eigen::Ref< const MLVector<WeightType> > f(hidden.col(forget_idx));
+						
+						grad_hidden.col(hidden_idx) = 	W_output_hid.transpose()*grad_b_output +
+														W_candidate_hid.transpose()*grad_b_candidate +
+														W_input_hid.transpose()*grad_b_input + 
+														W_forget_hid.transpose()*grad_b_forget;
+						grad_hidden.col(cell_idx).array() *= f.array();
 
 					}
 
-					void compute_hidden_gradient_from_output(Eigen::Ref< MLVector<WeightType> > grad_hidden){
+					void compute_hidden_gradient_from_output(Eigen::Ref< MLMatrix<WeightType> > grad_hidden, const Eigen::Ref< const MLMatrix<WeightType> > hidden ){
 						
-						grad_hidden = W_out.transpose()*grad_b_out;
+						grad_hidden.setZero();
+						grad_hidden.col(hidden_idx) = W_out.transpose()*grad_b_out;
+
 
 					}
 				private:
 					// state/gates indexing
 					static const size_t hidden_idx = 0,	
-										preproc_cell_idx = 1,
-										proc_cell_idx = 2,
+										cell_idx = 1,
+										candidate_idx = 2,
 										forget_idx = 3,
 										input_idx = 4,
 										output_idx = 5;
@@ -1261,9 +1271,9 @@ namespace MLearn{
 
 					}
 
-					void compute_hidden_gradient_from_output(Eigen::Ref< MLVector<WeightType> > grad_hidden){
+					void compute_hidden_gradient_from_output(Eigen::Ref< MLMatrix<WeightType> > grad_hidden, const Eigen::Ref< const MLMatrix<WeightType> > hidden ){
 						
-						grad_hidden = W_out.transpose()*grad_b_out;
+						grad_hidden.col(hidden_idx) = W_out.transpose()*grad_b_out;
 
 					}
 				private:

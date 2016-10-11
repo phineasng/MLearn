@@ -3,6 +3,7 @@
 
 // MLearn includes
 #include "MLearnTypes.h"
+#include "MLearnCommonFuncs.h"
 
 // STL includes
 #include <type_traits>
@@ -118,7 +119,7 @@ namespace MLearn{
 			typename DERIVED::Scalar res = typename DERIVED::Scalar(0);
 			typename DERIVED::Scalar max = output.maxCoeff();
 			res = - output.dot(exp_output);
-			res += exp_output.sum()*( max + std::log( ( output.array() - max ).unaryExpr( std::pointer_to_unary_function< typename DERIVED::Scalar, typename DERIVED::Scalar>(exp) ).sum() ) );
+			res += exp_output.sum()*( max + std::log( ( output.array() - max ).unaryExpr( std::pointer_to_unary_function< typename DERIVED::Scalar, typename DERIVED::Scalar>(exponential) ).sum() ) );
 			return res;
 		}
 
@@ -129,7 +130,7 @@ namespace MLearn{
 			static_assert( (DERIVED::ColsAtCompileTime == 1) && (DERIVED_2::ColsAtCompileTime == 1) && (DERIVED_3::ColsAtCompileTime == 1), "Inputs have to be column vectors (or compatible structures)!" );
 			static_assert( std::is_floating_point<typename DERIVED::Scalar>::value && std::is_same<typename DERIVED::Scalar, typename DERIVED_2::Scalar>::value && std::is_same<typename DERIVED::Scalar, typename DERIVED_3::Scalar>::value, "Scalar types have to be the same and floating point!" );
 			typename DERIVED::Scalar max = output.maxCoeff();
-			gradient = (output.array() - max).unaryExpr( std::pointer_to_unary_function< typename DERIVED::Scalar, typename DERIVED::Scalar>(exp) );
+			gradient = (output.array() - max).unaryExpr( std::pointer_to_unary_function< typename DERIVED::Scalar, typename DERIVED::Scalar>(exponential) );
 			gradient *= exp_output.sum()/gradient.sum();
 			gradient -= exp_output; 
 		}

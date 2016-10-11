@@ -85,12 +85,14 @@ namespace MLearn{
 			void minimize( const Cost& cost, Eigen::MatrixBase<DERIVED>& x ){
 				static_assert(std::is_same<typename DERIVED::Scalar, ScalarType >::value, "Input vector has to be the same type declared in the minimizer!");
 				
+				bool gradient_is_zero = false;
 				// reallocate gradient if necessary
 				this->gradient.resize(x.size());
 				update.resize(x.size());
 				if (!initializedFlag){
 					initializedFlag = true;
 					gradient_mean = MLVector<ScalarType>::Zero(x.size());
+					gradient_is_zero = true;
 					update_mean = MLVector<ScalarType>::Zero(x.size());
 				}else{
 					MLEARN_ASSERT( gradient_mean.size() == x.size(), "Size of input vector and update vectors not compatible! Set initialization flag to false!" );
@@ -113,7 +115,11 @@ namespace MLearn{
 
 				this->to_sample =this->shuffled_indeces.segment(0,this->size_batch);
 				cost.compute_gradient(x,this->gradient,this->gradient_options);
-				gradient_mean = forget_factor*gradient_mean + _1m_forget_factor*(this->gradient).cwiseAbs2();
+				if (gradient_is_zero)
+					gradient_mean = (this->gradient).cwiseAbs2();
+				else
+					gradient_mean = forget_factor*gradient_mean + _1m_forget_factor*(this->gradient).cwiseAbs2();
+
 				ScalarType sq_norm = this->gradient.squaredNorm();
 						
 				stopped = (sq_norm < sqTolerance);

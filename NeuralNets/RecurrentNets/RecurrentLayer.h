@@ -43,7 +43,9 @@ namespace MLearn{
 					outputs_pre_activation(output_size,n_states_alloc),
 					inputs(input_size,n_states_alloc),
 					grad_temp(cell.computeNWeights(input_sz,hidden_sz,output_sz)),
-					grad_hidden(hidden_sz,size_t(RNNCellTraits<CELLTYPE>::N_cell_gradients))
+					grad_hidden(hidden_sz,size_t(RNNCellTraits<CELLTYPE>::N_cell_gradients)),
+					grad_input(input_size,n_states_alloc),
+					grad_input_tmp(input_size,n_states_alloc)
 				{
 					static_assert( std::is_integral<U_INT>::value && std::is_unsigned<U_INT>::value, "Size values must be unsigned integers!" );
 				}
@@ -63,6 +65,8 @@ namespace MLearn{
 				void resizeInputsAllocation(U_INT size_alloc){
 					static_assert( std::is_integral<U_INT>::value && std::is_unsigned<U_INT>::value, "Size value must be unsigned integers!" );
 					inputs.conservativeResize(input_size,size_alloc);
+					grad_input.conservativeResize(input_size,size_alloc);
+					grad_input_tmp.conservativeResize(input_size,size_alloc);
 				}
 				template < typename U_INT >
 				void resizeOutputsAllocation(U_INT size_alloc){
@@ -181,13 +185,14 @@ namespace MLearn{
 
 				}
 				// NOTE: valid use only after unrolling
-				void bptt( Eigen::Ref< MLVector<WeightType> > _grad_weights, const Eigen::Ref< const MLMatrix<WeightType> > grad_output ){
+				void bptt( Eigen::Ref< MLVector<WeightType> > _grad_weights, const Eigen::Ref< const MLMatrix<WeightType> > grad_output, bool compute_input_gradient = false ){
 					MLEARN_ASSERT( grad_output.cols() == unrolled_output_steps, "Expected a different number of output gradients! (It might be that you haven't unrolled the network for the current data point)" );
 					MLEARN_ASSERT( grad_temp.size() == _grad_weights.size(), "Expected gradient vector of different size" );
 					// initialize to zero
 					grad_temp.setZero();
 					_grad_weights.setZero();
 					cell.attachGradWeights(grad_temp, input_size,hidden_size,output_size);
+					grad_input.setZero();
 					// 
 					int outer_iteration = 0;
 					for ( int out_step = unrolled_output_steps - 1; out_step >= 0; --out_step ){
@@ -196,6 +201,7 @@ namespace MLearn{
 						IndexType hidden_step_old = hidden_step - 1;
 						IndexType start_col = hidden_step*RNNCellTraits<CELLTYPE>::N_internal_states;
 						IndexType start_col_old = start_col - RNNCellTraits<CELLTYPE>::N_internal_states;
+						grad_input_tmp.setZero();
 
 						// backpropagate the output error
 						cell.compute_grad_hidden_output( 	grad_output.col(out_step), 
@@ -233,12 +239,16 @@ namespace MLearn{
 							cell.updateGradientInputWeights(_grad_weights,grad_temp);
 							cell.compute_hidden_gradient_from_hidden(grad_hidden,internal_state.block(0,start_col,hidden_size,RNNCellTraits<CELLTYPE>::N_internal_states));
 							
+							if ( compute_input_gradient ){
+								cell.compute_input_gradient( grad_input_tmp.col( hidden_step_old ) );
+							}
+
 							hidden_step = hidden_step_old;
 							--hidden_step_old;
 							start_col = start_col_old;
 							start_col_old -= RNNCellTraits<CELLTYPE>::N_internal_states;
 						}
-
+						grad_input += grad_input_tmp;
 						++outer_iteration;
 					}
 				}
@@ -296,6 +306,9 @@ namespace MLearn{
 				const MLMatrix<WeightType>& getLastHiddenGradient() const{
 					return grad_hidden;
 				}
+				const Eigen::Ref< const MLMatrix<WeightType>> getInputGradient() const{
+					return grad_input.leftCols(unrolled_input_steps);
+				}
 			private:
 				// sizes
 				const IndexType input_size, output_size, hidden_size;
@@ -312,6 +325,8 @@ namespace MLearn{
 				// Temporaries
 				MLVector< WeightType > grad_temp;
 				MLMatrix< WeightType > grad_hidden;
+				MLMatrix< WeightType > grad_input;
+				MLMatrix< WeightType > grad_input_tmp;
 				// Cell - for specialized routines
 				RecurrentImpl::RNNCell< WeightType,CELLTYPE,HIDDEN_ACTIVATION,OUTPUT_ACTIVATION > cell;
 

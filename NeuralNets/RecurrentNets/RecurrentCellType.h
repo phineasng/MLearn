@@ -306,6 +306,12 @@ namespace MLearn{
 
 					}
 
+					void compute_input_gradient(Eigen::Ref< MLVector<WeightType> > grad_input ){
+						
+						grad_input = W_in_hid.transpose()*grad_b_hid;
+
+					}
+
 				private:
 
 					// mapped weights
@@ -829,8 +835,17 @@ namespace MLearn{
 						grad_hidden.setZero();
 						grad_hidden.col(hidden_idx) = W_out.transpose()*grad_b_out;
 
+					}
+
+					void compute_input_gradient(Eigen::Ref< MLVector<WeightType> > grad_input ){
+						
+						grad_input = 	W_output_in.transpose()*grad_b_output +
+										W_candidate_in.transpose()*grad_b_candidate +
+										W_input_in.transpose()*grad_b_input + 
+										W_forget_in.transpose()*grad_b_forget;	
 
 					}
+
 				private:
 					// state/gates indexing
 					static const size_t hidden_idx = 0,	
@@ -1283,6 +1298,15 @@ namespace MLearn{
 						grad_hidden.col(hidden_idx) = W_out.transpose()*grad_b_out;
 
 					}
+
+					void compute_input_gradient(Eigen::Ref< MLVector<WeightType> > grad_input ){
+						
+						grad_input = 	W_update_in.transpose()*grad_b_update +
+										W_candidate_in.transpose()*grad_b_candidate +  
+										W_reset_in.transpose()*grad_b_reset;
+
+					}
+
 				private:
 					// state/gates indexing
 					static const size_t hidden_idx = 0,

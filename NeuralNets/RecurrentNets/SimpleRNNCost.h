@@ -60,7 +60,7 @@ namespace MLearn{
 						}
 
 					}
-					loss/= ScalarType(data_interface_.getNSamples());
+					loss /= ScalarType(data_interface_.getNSamples());
 					// L1 or L2 regularization
 					// TODO(phineasng)
 

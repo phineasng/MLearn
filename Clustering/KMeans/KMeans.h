@@ -209,11 +209,6 @@ namespace MLearn{
 
       }
       
-      void setInitialCentroids(const Eigen::MatrixXf& centroids)
-      {
-        centroids_ = centroids;
-      }
-
       // get cluster label for each sample
       std::vector<int> getLabels()
       {

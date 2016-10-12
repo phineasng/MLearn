@@ -23,7 +23,6 @@ Eigen::MatrixXd PointsInCircle(int N)
         (double)(50 + radius * sin(angle));
 
   }
-  std::cout<<points.rows()<<", "<<points.cols()<<std::endl;
   return points;
 }
 
@@ -62,7 +61,7 @@ int main(int argc, char* argv[]){
   int K = std::atoi(argv[2]);
   Eigen::MatrixXd points = PointsInCircle(n_points);
   // 2) cluster them using kmeans
-  KMeans<double> clustering(100);
+  KMeans<double,3> clustering(100);
   clustering.run(points,K,10);// run 10 times, keep the best result
   // 3) display results and stats (e.g. time)
   printToFile(points,clustering.getLabels(),

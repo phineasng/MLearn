@@ -60,10 +60,26 @@ int main(int argc, char* argv[]){
   int n_points = std::atoi(argv[1]);
   int K = std::atoi(argv[2]);
   Eigen::MatrixXd points = PointsInCircle(n_points);
+ 
   // 2) cluster them using kmeans
-  KMeans<double,3> clustering(100);
-  clustering.run(points,K,10);// run 10 times, keep the best result
-  // 3) display results and stats (e.g. time)
+  KMeans<double,3> clustering(1e3);
+  
+  // option A) run 10 times with kmeans ++ init, keep the best result
+  clustering.run(points,K,10,true);
+  
+  // or B) manually set centroids to the borders of the circle and run once
+  // Eigen::MatrixXd centers(2,K);
+  // double radius = 50;
+  // for(int i = 0; i < centers.cols(); ++i)
+  // {
+    // double angle = 2.0 * M_PI *(double)i/(double)centers.cols();
+    // centers.col(i) << (double)(50 + radius * cos(angle)),
+        // (double)(50 + radius * sin(angle));
+  // }
+  // clustering.initialize(centers);
+  // clustering.runAfterInitialization(points);
+ 
+  // 3) print to csv for visualization with python
   printToFile(points,clustering.getLabels(),
       clustering.getClusterCentroids());
   return 0;	

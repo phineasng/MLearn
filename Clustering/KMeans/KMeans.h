@@ -35,6 +35,7 @@ namespace MLearn{
       const int max_iterations_;
       std::vector<int> labels_;
       MLMatrix < SCALAR_TYPE> centroids_;
+      bool CENTROIDS_SET_ = false;
 
     public:
 
@@ -43,7 +44,7 @@ namespace MLearn{
       max_iterations_(max_iterations)
       {
         srand(time(NULL)); // provide seed to randomizer in k-means++
-     }
+      }
 
     private:
 
@@ -67,15 +68,22 @@ namespace MLearn{
         return id_cluster_center;
       }
 
-      // initialize random centroids
-      void initializeRandom(const Eigen::Ref<const MLMatrix <SCALAR_TYPE> > input);
-      
-      // manually initialize centroids
-      void initializeFromIdx();
-      void initializeFromMatrix();
+      // initialize K random centroids
+      void initializeRandom(const Eigen::Ref<const MLMatrix <SCALAR_TYPE> > input, 
+          int K)
+      {
+        std::fill(labels_.begin(), labels_.end(), -1);
+        centroids_.setZero();
 
+        // choose k centers uniformly at random from among the data points
+        for(int k = 0; k < K; ++k)
+          centroids_.col(k) = input.col((rand() % labels_.size()));
+
+        CENTROIDS_SET_ = true;
+      }
+      
       // initialize centroids with kmeans ++
-      void initializeCentroids(const Eigen::Ref<const MLMatrix <SCALAR_TYPE> > input)
+      void initializeKPP(const Eigen::Ref<const MLMatrix <SCALAR_TYPE> > input)
       {
         std::fill(labels_.begin(), labels_.end(), -1);
         centroids_.setZero();
@@ -108,6 +116,8 @@ namespace MLearn{
           // take the point chosen with the probability distribution as cluster seed
           centroids_.col(k) = input.col(int(idx));
         }	
+
+        CENTROIDS_SET_ = true;
       }
 
       // update labels to nearest centroid
@@ -130,14 +140,47 @@ namespace MLearn{
         }
         for(int k = 0; k < centroids_.cols(); ++k)
         {
-          assert(counter[k] > 0);
+          MLEARN_ASSERT(counter[k] > 0,"Empty cluster!");
           centroids_.col(k) /= counter[k];
         }
       }
 
-      // run k-means algorithm after k-means ++ initialization
+
+    public:
+
+      // get inertia to estimate how good clustering performs
+      SCALAR_TYPE getInertia(const Eigen::Ref<const MLMatrix <SCALAR_TYPE> > input)
+      {
+        SCALAR_TYPE sum = 0;
+        for(unsigned int i = 0; i < labels_.size(); ++i)
+          sum += DistanceFunction::compute(input.col(i),centroids_.col(labels_[i]));
+        return sum;
+      }
+
+       // manually initialize centroids with indexes or directly assign matrix
+      void initialize(const std::vector<int>& idx,
+          const Eigen::Ref<const MLMatrix <SCALAR_TYPE> > input)
+      {
+       centroids_.resize(input.rows(),idx.size());
+      
+       for (unsigned int i = 0; i < idx.size(); ++i)
+         centroids_.col(i) = input.col(idx[i]);
+
+       CENTROIDS_SET_ = true;
+      }
+
+      void initialize(const Eigen::Ref<const MLMatrix <SCALAR_TYPE> > centroids)
+      {
+        centroids_ = centroids;
+        CENTROIDS_SET_ = true;
+      }
+
+
+      // run k-means algorithm with initialized centroids
       void runAfterInitialization(const Eigen::Ref<const MLMatrix <SCALAR_TYPE> > input)
       {	
+        labels_ = std::vector<int>(input.cols(), -1);
+        MLEARN_ASSERT(CENTROIDS_SET_ = true, "Cluster centroids are not initialized!");
         int iter = 1;
         bool change = true;
         while(change && iter < max_iterations_)
@@ -156,24 +199,19 @@ namespace MLearn{
             updateCentroids(input);
           iter++;
         }
-      }
+        Utility::VerbosityLogger<2,VERBOSITY_REF>::log(
+            "KMeans Clustering converged after " );
+        Utility::VerbosityLogger<2,VERBOSITY_REF>::log(iter);
+        Utility::VerbosityLogger<2,VERBOSITY_REF>::log(" iterations" );
 
-
-    public:
-
-      // get inertia to estimate how good clustering performs
-      SCALAR_TYPE getInertia(const Eigen::Ref<const MLMatrix <SCALAR_TYPE> > input)
-      {
-        SCALAR_TYPE sum = 0;
-        for(unsigned int i = 0; i < labels_.size(); ++i)
-          sum += DistanceFunction::compute(input.col(i),centroids_.col(labels_[i]));
-        return sum;
       }
 
       // run N times with different centroid seeds and keep the best result
-      void run(const Eigen::Ref<const MLMatrix <SCALAR_TYPE> > input, int K, int N = 1)
+      void run(const Eigen::Ref<const MLMatrix <SCALAR_TYPE> > input, int K, 
+          int N = 10, bool USE_KMEANS_PP = true)
       {
-        assert(K <= input.cols());
+        MLEARN_ASSERT(K <= input.cols(), 
+            "The number of clusters has to be smaller than the amount of points.");
         centroids_.resize(input.rows(), K);
         labels_ = std::vector<int>(input.cols(), -1);
  
@@ -186,16 +224,22 @@ namespace MLearn{
         Utility::VerbosityLogger<1,VERBOSITY_REF>::log(N);
         Utility::VerbosityLogger<1,VERBOSITY_REF>::log(" times.\n");
 
-        // TODO(frenaut): set flag for initializer (random or set by input)
         for(int n = 0; n < N; ++n)
         {
-          // initialize using k++
-          initializeCentroids(input);
+          CENTROIDS_SET_ = false;
+
+          // initialize using kmeans++ (default) or random
+          if(USE_KMEANS_PP) 
+            initializeKPP(input);
+          else
+            initializeRandom(input,K);
+
           // run k means and get inertia
+          Utility::VerbosityLogger<2,VERBOSITY_REF>::log( n );
+          Utility::VerbosityLogger<2,VERBOSITY_REF>::log( ") " );
           runAfterInitialization(input);
           SCALAR_TYPE inertia = getInertia(input);
-          Utility::VerbosityLogger<2,VERBOSITY_REF>::log( n );
-          Utility::VerbosityLogger<2,VERBOSITY_REF>::log( ") Final inertia =  " );
+          Utility::VerbosityLogger<2,VERBOSITY_REF>::log( ", Final inertia =  " );
           Utility::VerbosityLogger<2,VERBOSITY_REF>::log( inertia );
           Utility::VerbosityLogger<2,VERBOSITY_REF>::log( "\n" );
 

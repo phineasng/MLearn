@@ -11,21 +11,10 @@
 #include <algorithm>
 #include <utility>
 #include <type_traits>
+
 #include <MLearn/Core>
 #include <MLearn/Utility/VerbosityLogger.h>
-
-// squared euclidian distance between two points
-template < typename DERIVED, typename DERIVED_2 >
-typename DERIVED::Scalar getDistance(const Eigen::MatrixBase< DERIVED >& a, 
-    const Eigen::MatrixBase< DERIVED_2 >& b)
-{
-  static_assert( (DERIVED::ColsAtCompileTime == 1)&&(DERIVED_2::ColsAtCompileTime == 1),
-      "Inputs have to be column vectors");
-  static_assert( std::is_floating_point<typename DERIVED::Scalar>::value &&
-      std::is_same<typename DERIVED::Scalar, typename DERIVED_2::Scalar>::value,
-      "Scalar types have to be the same and floating point!" );
-  return (a - b).squaredNorm();
-}
+#include <MLearn/Clustering/DistanceFunction.h>
 
 namespace MLearn{
 
@@ -37,7 +26,8 @@ namespace MLearn{
     *   \author   frenaut
     *
     */
-    template < typename SCALAR_TYPE, ushort VERBOSITY_REF = 0 >
+    template < typename SCALAR_TYPE, ushort VERBOSITY_REF = 0, 
+             typename DistanceFunction = SquaredEuclidianDistance >
     class KMeans
     {
     private:
@@ -58,7 +48,8 @@ namespace MLearn{
     private:
 
       // return ID of nearest centroid 
-      int getIDNearestCentroid(const Eigen::Ref< const MLVector< SCALAR_TYPE > > point, const int& k_max)
+      int getIDNearestCentroid(const Eigen::Ref< const MLVector< SCALAR_TYPE > > point,
+          const int& k_max)
       {
         SCALAR_TYPE dist;
         SCALAR_TYPE min_dist = INFINITY;
@@ -66,7 +57,7 @@ namespace MLearn{
         //assert(k_max <= centroids_.cols());
         for(int k = 0; k < k_max; ++k)
         {	
-          dist = getDistance(point,centroids_.col(k));
+          dist = DistanceFunction::compute(point,centroids_.col(k));
           if(dist < min_dist)
           {
             min_dist = dist;
@@ -75,6 +66,13 @@ namespace MLearn{
         }
         return id_cluster_center;
       }
+
+      // initialize random centroids
+      void initializeRandom(const Eigen::Ref<const MLMatrix <SCALAR_TYPE> > input);
+      
+      // manually initialize centroids
+      void initializeFromIdx();
+      void initializeFromMatrix();
 
       // initialize centroids with kmeans ++
       void initializeCentroids(const Eigen::Ref<const MLMatrix <SCALAR_TYPE> > input)
@@ -95,7 +93,7 @@ namespace MLearn{
           {
             // get squared dist between point and nearest center
             int nearest_centroid_id = getIDNearestCentroid(input.col(i), k);
-            weight_sum_i += getDistance(input.col(i),
+            weight_sum_i += DistanceFunction::compute(input.col(i),
                           centroids_.col(nearest_centroid_id));
             weight_sum[i] = weight_sum_i;
           }
@@ -168,7 +166,7 @@ namespace MLearn{
       {
         SCALAR_TYPE sum = 0;
         for(unsigned int i = 0; i < labels_.size(); ++i)
-          sum += getDistance(input.col(i),centroids_.col(labels_[i]));
+          sum += DistanceFunction::compute(input.col(i),centroids_.col(labels_[i]));
         return sum;
       }
 
@@ -188,19 +186,20 @@ namespace MLearn{
         Utility::VerbosityLogger<1,VERBOSITY_REF>::log(N);
         Utility::VerbosityLogger<1,VERBOSITY_REF>::log(" times.\n");
 
+        // TODO(frenaut): set flag for initializer (random or set by input)
         for(int n = 0; n < N; ++n)
         {
           // initialize using k++
           initializeCentroids(input);
-          // run k means
+          // run k means and get inertia
           runAfterInitialization(input);
-          // if inertia is min, store final centroids
           SCALAR_TYPE inertia = getInertia(input);
           Utility::VerbosityLogger<2,VERBOSITY_REF>::log( n );
           Utility::VerbosityLogger<2,VERBOSITY_REF>::log( ") Final inertia =  " );
           Utility::VerbosityLogger<2,VERBOSITY_REF>::log( inertia );
           Utility::VerbosityLogger<2,VERBOSITY_REF>::log( "\n" );
 
+          // if inertia is min, store final centroids
           if(inertia < min_inertia)
           {
             min_inertia = inertia;
@@ -223,7 +222,7 @@ namespace MLearn{
       }
       
       // get cluster centroids
-     const MLMatrix< SCALAR_TYPE >& getClusterCentroids()
+      const MLMatrix< SCALAR_TYPE >& getClusterCentroids()
       {
         return(centroids_);
       }

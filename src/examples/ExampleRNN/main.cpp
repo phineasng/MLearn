@@ -34,14 +34,14 @@ int main(int argc, char* argv[]){
 	constexpr ActivationType hidden_act = ActivationType::HYPER_TAN;
 	constexpr ActivationType output_act = ActivationType::LINEAR;
 	// Cell type
-	constexpr RNNType cell_type = RNNType::LSTM;
+	constexpr RNNType cell_type = RNNType::GRU;
 
 	// Loss and regularization type
-	constexpr LossType loss = LossType::SOFTMAX_CROSS_ENTROPY;
+	constexpr LossType loss = LossType::L2_SQUARED;
 
 	// Setup RNN
 	typedef RecurrentLayer< float_type, index_type, cell_type, hidden_act, output_act > RNNLayer;
-	RNNLayer cell(10u,64u,10u);
+	RNNLayer cell(10u,16u,10u);
 	// -- Set some random weights
 	MLVector<float_type> weights = 0.5*MLVector<float_type>::Random( cell.getNWeights() );
 	cell.attachWeightsToCell(weights);

@@ -2,6 +2,7 @@
 #include <chrono>
 
 #include <MLearn/Core>
+#include <MLearn/NeuralNets/RecurrentNets/RecurrentCellType.h>
 #include <MLearn/NeuralNets/RecurrentNets/RecurrentLayer.h>
 #include <MLearn/NeuralNets/RecurrentNets/SimpleRNNCost.h>
 #include <MLearn/NeuralNets/ActivationFunction.h>
@@ -130,11 +131,11 @@ int main(int argc, char* argv[]){
 	//MLearn::Optimization::GradientDescent< MLearn::Optimization::DifferentiationMode::ANALYTICAL,MLearn::Optimization::LineSearchStrategy::FIXED,float_type,index_type,2 > minimizer;
 	//MLearn::Optimization::StochasticGradientDescent< MLearn::Optimization::LineSearchStrategy::FIXED,float_type,index_type,2 > minimizer;
 	//MLearn::Optimization::GradientOption< MLearn::Optimization::DifferentiationMode::ANALYTICAL, float_type > opt_2;
-	//MLearn::Optimization::AdaGrad< MLearn::Optimization::LineSearchStrategy::FIXED,float_type,index_type,2 > minimizer;
-	MLearn::Optimization::AdaDelta< float_type,index_type,0 > minimizer;
+	MLearn::Optimization::AdaGrad< MLearn::Optimization::LineSearchStrategy::FIXED,float_type,index_type,0 > minimizer;
+	//MLearn::Optimization::AdaDelta< float_type,index_type,0 > minimizer;
 	minimizer.setNSamples(900);
-	minimizer.setSizeBatch(20);
-	MLearn::Optimization::LineSearch<MLearn::Optimization::LineSearchStrategy::FIXED,float_type,index_type> strategy(0.05);
+	minimizer.setSizeBatch(10);
+	MLearn::Optimization::LineSearch<MLearn::Optimization::LineSearchStrategy::FIXED,float_type,index_type> strategy(0.5);
 	minimizer.setTolerance(1e-25);
 	minimizer.setMaxIter(10);
 	minimizer.setLineSearchMethod(strategy);

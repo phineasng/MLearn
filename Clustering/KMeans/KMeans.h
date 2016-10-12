@@ -37,7 +37,7 @@ namespace MLearn{
     *   \author   frenaut
     *
     */
-    template < typename SCALAR_TYPE >
+    template < typename SCALAR_TYPE, ushort VERBOSITY_REF = 0 >
     class KMeans
     {
     private:
@@ -181,13 +181,13 @@ namespace MLearn{
  
         MLMatrix< SCALAR_TYPE > best_centroids(centroids_.rows(),centroids_.cols());
         SCALAR_TYPE min_inertia = INFINITY;
-        // Utility::VerbosityLogger<1,VERBOSITY_REF>::log(
-            // "====== STARTING: KMeans Clustering  ======\n" );
-// 
-        // Utility::VerbosityLogger<1,VERBOSITY_REF>::log(" Running KMeans ");
-        // Utility::VerbosityLogger<1,VERBOSITY_REF>::log(N);
-        // Utility::VerbosityLogger<1,VERBOSITY_REF>::log(" times.\n");
-// 
+        Utility::VerbosityLogger<1,VERBOSITY_REF>::log(
+            "====== STARTING: KMeans Clustering  ======\n" );
+
+        Utility::VerbosityLogger<1,VERBOSITY_REF>::log(" Running KMeans ");
+        Utility::VerbosityLogger<1,VERBOSITY_REF>::log(N);
+        Utility::VerbosityLogger<1,VERBOSITY_REF>::log(" times.\n");
+
         for(int n = 0; n < N; ++n)
         {
           // initialize using k++
@@ -196,11 +196,11 @@ namespace MLearn{
           runAfterInitialization(input);
           // if inertia is min, store final centroids
           SCALAR_TYPE inertia = getInertia(input);
-          // Utility::VerbosityLogger<2,VERBOSITY_REF>::log( n );
-          // Utility::VerbosityLogger<2,VERBOSITY_REF>::log( ") Final inertia =  " );
-          // Utility::VerbosityLogger<2,VERBOSITY_REF>::log( inertia );
-          // Utility::VerbosityLogger<2,VERBOSITY_REF>::log( "\n" );
-// 
+          Utility::VerbosityLogger<2,VERBOSITY_REF>::log( n );
+          Utility::VerbosityLogger<2,VERBOSITY_REF>::log( ") Final inertia =  " );
+          Utility::VerbosityLogger<2,VERBOSITY_REF>::log( inertia );
+          Utility::VerbosityLogger<2,VERBOSITY_REF>::log( "\n" );
+
           if(inertia < min_inertia)
           {
             min_inertia = inertia;
@@ -211,8 +211,8 @@ namespace MLearn{
         centroids_ = best_centroids;
         // update labels accordingly
         updateLabels(input);
-        // Utility::VerbosityLogger<1,VERBOSITY_REF>::log( 
-            // "====== DONE: KMeans Clustering  ======\n" );
+        Utility::VerbosityLogger<1,VERBOSITY_REF>::log( 
+            "====== DONE: KMeans Clustering  ======\n" );
 
       }
       

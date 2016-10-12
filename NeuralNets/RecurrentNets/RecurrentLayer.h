@@ -43,7 +43,7 @@ namespace MLearn{
 					outputs_pre_activation(output_size,n_states_alloc),
 					inputs(input_size,n_states_alloc),
 					grad_temp(cell.computeNWeights(input_sz,hidden_sz,output_sz)),
-					grad_hidden(hidden_sz,RNNCellTraits<CELLTYPE>::N_cell_gradients)
+					grad_hidden(hidden_sz,size_t(RNNCellTraits<CELLTYPE>::N_cell_gradients))
 				{
 					static_assert( std::is_integral<U_INT>::value && std::is_unsigned<U_INT>::value, "Size values must be unsigned integers!" );
 				}
@@ -293,7 +293,7 @@ namespace MLearn{
 				IndexType getNWeights() const{
 					return cell.computeNWeights(input_size, hidden_size, output_size);
 				}
-				const MLVector<WeightType> getLastHiddenGradient() const{
+				const MLMatrix<WeightType>& getLastHiddenGradient() const{
 					return grad_hidden;
 				}
 			private:

@@ -20,22 +20,29 @@ namespace MLearn{
 
 			template < RNNType TYPE >
 			struct RNNCellTraits{
-				static const uint N_internal_states = 1; 	// denote the number of internal states useful for cell computations, 
+				static const uint N_internal_states; 	// denote the number of internal states useful for cell computations, 
 															// e.g. LSTM has 5 (hidden, preprocessed cell state, processed cell state, input gate result, forget gate result)
-				static const uint N_cell_gradients = 1; 	// denote the number of gradients to be backpropagated
+				static const uint N_cell_gradients; 	// denote the number of gradients to be backpropagated
 			};
 
 			template <>
-			struct RNNCellTraits< RNNType::LSTM >{
-				static const uint N_internal_states = 6;
-				static const uint N_cell_gradients = 2;
+			struct RNNCellTraits< RNNType::VANILLA >{
+				static const uint N_internal_states = 1u; 	
+				static const uint N_cell_gradients = 1u; 
 			};
 
 			template <>
 			struct RNNCellTraits< RNNType::GRU >{
-				static const uint N_internal_states = 4;
-				static const uint N_cell_gradients = 2;
+				static const uint N_internal_states = 4u;
+				static const uint N_cell_gradients = 1u;
 			};
+
+			template <>
+			struct RNNCellTraits< RNNType::LSTM >{
+				static const uint N_internal_states = 6u;
+				static const uint N_cell_gradients = 2u;
+			};
+
 
 			namespace RecurrentImpl{
 
@@ -770,7 +777,7 @@ namespace MLearn{
 
 						InternalImpl::DerivativeWrapper<HIDDEN_ACTIVATION>::template derive<WeightType>(C,C_post,cell_state_gradient);
 						cell_state_gradient = cell_state_gradient.cwiseProduct(o);
-						cell_state_gradient = cell_state_gradient.cwiseProduct(grad_hidden);
+						cell_state_gradient = cell_state_gradient.cwiseProduct(grad_hidden.col(hidden_idx));
 						grad_hidden.col(cell_idx) += cell_state_gradient;
 
 						InternalImpl::DerivativeWrapper<ActivationType::LOGISTIC>::template derive<WeightType>(o_pre,o,grad_b_output);
@@ -1034,7 +1041,7 @@ namespace MLearn{
 						candidate = W_candidate_in*input + W_candidate_hid*(h.cwiseProduct(r)) + b_candidate;
 						candidate = candidate.unaryExpr(std::pointer_to_unary_function<WeightType,WeightType>(ActivationFunction<HIDDEN_ACTIVATION>::evaluate));
 
-						h.array() = ( 1 - u.array() )*candidate.array() + h.array()*u.array();
+						h.array() = ( 1 - u.array() )*h.array() + candidate.array()*u.array();
 
 						output = W_out*h + b_out;
 						output = output.unaryExpr(std::pointer_to_unary_function<WeightType,WeightType>(ActivationFunction<OUTPUT_ACTIVATION>::evaluate));
@@ -1060,7 +1067,7 @@ namespace MLearn{
 						candidate = W_candidate_in*input + W_candidate_hid*(h.cwiseProduct(r)) + b_candidate;
 						candidate = candidate.unaryExpr(std::pointer_to_unary_function<WeightType,WeightType>(ActivationFunction<HIDDEN_ACTIVATION>::evaluate));
 
-						h.array() = ( 1 - u.array() )*candidate.array() + h.array()*u.array();
+						h.array() = ( 1 - u.array() )*h.array() + candidate.array()*u.array();
 
 					}
 
@@ -1082,7 +1089,7 @@ namespace MLearn{
 						candidate = W_candidate_hid*(h.cwiseProduct(r)) + b_candidate;
 						candidate = candidate.unaryExpr(std::pointer_to_unary_function<WeightType,WeightType>(ActivationFunction<HIDDEN_ACTIVATION>::evaluate));
 
-						h.array() = ( 1 - u.array() )*candidate.array() + h.array()*u.array();
+						h.array() = ( 1 - u.array() )*h.array() + candidate.array()*u.array();
 
 					}
 
@@ -1105,7 +1112,7 @@ namespace MLearn{
 						candidate = W_candidate_hid*(h.cwiseProduct(r)) + b_candidate;
 						candidate = candidate.unaryExpr(std::pointer_to_unary_function<WeightType,WeightType>(ActivationFunction<HIDDEN_ACTIVATION>::evaluate));
 
-						h.array() = ( 1 - u.array() )*candidate.array() + h.array()*u.array();
+						h.array() = ( 1 - u.array() )*h.array() + candidate.array()*u.array();
 
 						output = W_out*h + b_out;
 						output = output.unaryExpr(std::pointer_to_unary_function<WeightType,WeightType>(ActivationFunction<OUTPUT_ACTIVATION>::evaluate));
@@ -1144,7 +1151,7 @@ namespace MLearn{
 						candidate_pre.noalias() = W_candidate_in*input + W_candidate_hid*(old_h.cwiseProduct(r)) + b_candidate;
 						candidate.noalias() = candidate_pre.unaryExpr(std::pointer_to_unary_function<WeightType,WeightType>(ActivationFunction<HIDDEN_ACTIVATION>::evaluate));
 
-						h.array() = ( 1 - u.array() )*candidate.array() + old_h.array()*u.array();
+						h.array() = ( 1 - u.array() )*old_h.array() + candidate.array()*u.array();
 
 					}
 
@@ -1178,7 +1185,7 @@ namespace MLearn{
 						candidate_pre.noalias() = W_candidate_hid*(old_h.cwiseProduct(r)) + b_candidate;
 						candidate.noalias() = candidate_pre.unaryExpr(std::pointer_to_unary_function<WeightType,WeightType>(ActivationFunction<HIDDEN_ACTIVATION>::evaluate));
 
-						h.array() = ( 1 - u.array() )*candidate.array() + old_h.array()*u.array();
+						h.array() = ( 1 - u.array() )*old_h.array() + candidate.array()*u.array();
 					}
 
 					void step_hidden_to_output_unroll( 	const Eigen::Ref< const MLMatrix<WeightType> > hidden, 
@@ -1212,7 +1219,7 @@ namespace MLearn{
 
 					}
 
-					void compute_grad_hidden_hidden( 	const Eigen::Ref< const MLVector<WeightType> > grad_hidden, 
+					void compute_grad_hidden_hidden( 	const Eigen::Ref< const MLMatrix<WeightType> > grad_hidden, 
 														const Eigen::Ref< const MLMatrix<WeightType> > hidden_pre_activation, 
 														const Eigen::Ref< const MLMatrix<WeightType> > hidden, 
 														const Eigen::Ref< const MLMatrix<WeightType> > old_hidden ){
@@ -1235,19 +1242,17 @@ namespace MLearn{
 						const Eigen::Ref< const MLVector<WeightType> > candidate_pre(hidden_pre_activation.col(candidate_idx));
 
 						InternalImpl::DerivativeWrapper<ActivationType::LOGISTIC>::template derive<WeightType>(u_pre,u,grad_b_update);
-						grad_b_update = grad_b_update.cwiseProduct( old_h - candidate );
+						grad_b_update = grad_b_update.cwiseProduct( candidate - old_h );
 						grad_b_update = grad_b_update.cwiseProduct( grad_hidden );
 						grad_W_update_hid = grad_b_update*old_h.transpose(); 
 
 						InternalImpl::DerivativeWrapper<HIDDEN_ACTIVATION>::template derive<WeightType>(candidate_pre,candidate,grad_b_candidate);
-						grad_b_candidate.array() = grad_b_candidate.array()*( 1 -u.array() );
+						grad_b_candidate.array() = grad_b_candidate.array()*u.array();
 						grad_b_candidate = grad_b_candidate.cwiseProduct( grad_hidden );
 						grad_W_candidate_hid = grad_b_candidate*((old_h.cwiseProduct(r)).transpose());
 
 						InternalImpl::DerivativeWrapper<ActivationType::LOGISTIC>::template derive<WeightType>(r_pre,r,grad_b_reset);
-						grad_b_reset = grad_b_reset.cwiseProduct( old_h );
-						grad_b_reset = W_reset_hid.transpose()*grad_b_reset;
-						grad_b_reset = grad_b_reset.cwiseProduct( grad_b_candidate );
+						grad_b_reset = grad_b_reset.cwiseProduct( old_h.cwiseProduct( W_candidate_hid.transpose()*grad_b_candidate ) );
 						grad_W_reset_hid = grad_b_reset*old_h.transpose();
 
 					}
@@ -1260,14 +1265,16 @@ namespace MLearn{
 
 					}
 
-					void compute_hidden_gradient_from_hidden(Eigen::Ref< MLVector<WeightType> > grad_hidden, const Eigen::Ref< const MLMatrix<WeightType> > hidden){
+					void compute_hidden_gradient_from_hidden(Eigen::Ref< MLMatrix<WeightType> > grad_hidden, const Eigen::Ref< const MLMatrix<WeightType> > hidden){
 						
 						const Eigen::Ref< const MLVector<WeightType> > u(hidden.col(update_idx));
+						const Eigen::Ref< const MLVector<WeightType> > candidate(hidden.col(reset_idx));
 						const Eigen::Ref< const MLVector<WeightType> > r(hidden.col(reset_idx));
 
-						grad_hidden = 	u.cwiseProduct(grad_hidden) + 
-										W_update_hid.transpose()*grad_b_update + 
-										(W_candidate_hid.transpose()*grad_b_candidate).cwiseProduct( r + W_reset_hid.transpose()*grad_b_reset );
+						grad_hidden.array() *= 1 - u.array();
+						grad_hidden += W_update_hid.transpose()*grad_b_update;
+						grad_hidden += (W_candidate_hid.transpose()*grad_b_candidate).cwiseProduct( r );
+						grad_hidden += W_reset_hid.transpose()*grad_b_reset;
 
 					}
 

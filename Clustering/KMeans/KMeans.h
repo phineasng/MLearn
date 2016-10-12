@@ -15,8 +15,15 @@
 #include <MLearn/Utility/VerbosityLogger.h>
 
 // squared euclidian distance between two points
-float getDistance(const Eigen::VectorXf& a, const Eigen::VectorXf& b)
+template < typename DERIVED, typename DERIVED_2 >
+typename DERIVED::Scalar getDistance(const Eigen::MatrixBase< DERIVED >& a, 
+    const Eigen::MatrixBase< DERIVED_2 >& b)
 {
+  static_assert( (DERIVED::ColsAtCompileTime == 1)&&(DERIVED_2::ColsAtCompileTime == 1),
+      "Inputs have to be column vectors");
+  static_assert( std::is_floating_point<typename DERIVED::Scalar>::value &&
+      std::is_same<typename DERIVED::Scalar, typename DERIVED_2::Scalar>::value,
+      "Scalar types have to be the same and floating point!" );
   return (a - b).squaredNorm();
 }
 
@@ -30,14 +37,14 @@ namespace MLearn{
     *   \author   frenaut
     *
     */
-
+    template < typename SCALAR_TYPE >
     class KMeans
     {
     private:
 
       const int max_iterations_;
       std::vector<int> labels_;
-      Eigen::MatrixXf centroids_;
+      MLMatrix < SCALAR_TYPE> centroids_;
 
     public:
 
@@ -51,13 +58,13 @@ namespace MLearn{
     private:
 
       // return ID of nearest centroid 
-      int getIDNearestCentroid(const Eigen::VectorXf& point, const int& k_max)
+      int getIDNearestCentroid(const Eigen::Ref< const MLVector< SCALAR_TYPE > > point, const int& k_max)
       {
-        float dist;
-        float min_dist = INFINITY;
+        SCALAR_TYPE dist;
+        SCALAR_TYPE min_dist = INFINITY;
         int id_cluster_center = 0;
         //assert(k_max <= centroids_.cols());
-        for(size_t k = 0; k < k_max; ++k)
+        for(int k = 0; k < k_max; ++k)
         {	
           dist = getDistance(point,centroids_.col(k));
           if(dist < min_dist)
@@ -70,60 +77,60 @@ namespace MLearn{
       }
 
       // initialize centroids with kmeans ++
-      void initializeCentroids(const Eigen::MatrixXf& points)
+      void initializeCentroids(const Eigen::Ref<const MLMatrix <SCALAR_TYPE> > input)
       {
         std::fill(labels_.begin(), labels_.end(), -1);
         centroids_.setZero();
 
         // choose one center uniformly at random from among the data points
-        centroids_.col(0) = points.col((rand() % labels_.size()));
+        centroids_.col(0) = input.col((rand() % labels_.size()));
 
-        for(size_t k = 1; k < centroids_.cols(); ++k)
+        for(unsigned int k = 1; k < centroids_.cols(); ++k)
         {	
           // for each point, compute squared distance and put as probability weight
-          std::vector<float> weight_sum(labels_.size());
+          std::vector<SCALAR_TYPE> weight_sum(labels_.size());
           
-          float weight_sum_i = 0;
-          for(size_t i = 0; i < labels_.size(); ++i)
+          SCALAR_TYPE weight_sum_i = 0;
+          for(unsigned int i = 0; i < labels_.size(); ++i)
           {
             // get squared dist between point and nearest center
-            int nearest_centroid_id = getIDNearestCentroid(points.col(i), k);
-            weight_sum_i += getDistance(points.col(i),
+            int nearest_centroid_id = getIDNearestCentroid(input.col(i), k);
+            weight_sum_i += getDistance(input.col(i),
                           centroids_.col(nearest_centroid_id));
             weight_sum[i] = weight_sum_i;
           }
           // generate a random float from a 
           // uniform distribution from 0 to weights_sum(end)
-          float p_rand = static_cast <float> (rand()) / (static_cast <float>
+          SCALAR_TYPE p_rand = static_cast <SCALAR_TYPE> (rand()) / (static_cast <SCALAR_TYPE>
                       (RAND_MAX / weight_sum[labels_.size() - 1]));
                       
           // lowest idx such that p_rand < weight_sum[idx]
           int idx = std::upper_bound(weight_sum.begin(), weight_sum.end(), p_rand)
             - weight_sum.begin();
           // take the point chosen with the probability distribution as cluster seed
-          centroids_.col(k) = points.col(int(idx));
+          centroids_.col(k) = input.col(int(idx));
         }	
       }
 
       // update labels to nearest centroid
-      void updateLabels(const Eigen::MatrixXf& points)
+      void updateLabels(const Eigen::Ref<const MLMatrix <SCALAR_TYPE> > input)
       {
-        for(size_t i = 0; i < labels_.size(); ++i)
-          labels_[i] = getIDNearestCentroid(points.col(i),centroids_.cols());
+        for(unsigned int i = 0; i < labels_.size(); ++i)
+          labels_[i] = getIDNearestCentroid(input.col(i),centroids_.cols());
       }
 
       // update centroid positions according to labels
-      void updateCentroids(const Eigen::MatrixXf& points)
+      void updateCentroids(const Eigen::Ref<const MLMatrix <SCALAR_TYPE> > input)
       {
         centroids_.setZero();
         std::vector<int> counter(centroids_.cols(),0);
-        for(size_t i = 0; i < labels_.size(); ++i)
+        for(unsigned int i = 0; i < labels_.size(); ++i)
         {
           int k = labels_[i];
-          centroids_.col(k) += points.col(i);
+          centroids_.col(k) += input.col(i);
           counter[k] ++; 
         }
-        for(size_t k = 0; k < centroids_.cols(); ++k)
+        for(int k = 0; k < centroids_.cols(); ++k)
         {
           assert(counter[k] > 0);
           centroids_.col(k) /= counter[k];
@@ -131,16 +138,16 @@ namespace MLearn{
       }
 
       // run k-means algorithm after k-means ++ initialization
-      void runAfterInitialization(const Eigen::MatrixXf& points)
+      void runAfterInitialization(const Eigen::Ref<const MLMatrix <SCALAR_TYPE> > input)
       {	
         int iter = 1;
         bool change = true;
         while(change && iter < max_iterations_)
         {	
           change = false;	
-          for (size_t i = 0; i < labels_.size(); ++i)
+          for (unsigned int i = 0; i < labels_.size(); ++i)
           {
-            int new_label = getIDNearestCentroid(points.col(i),centroids_.cols());
+            int new_label = getIDNearestCentroid(input.col(i),centroids_.cols());
             if (new_label != labels_[i])
             {
               labels_[i] = new_label;
@@ -148,7 +155,7 @@ namespace MLearn{
             }
           }
           if (change == true)
-            updateCentroids(points);
+            updateCentroids(input);
           iter++;
         }
       }
@@ -157,23 +164,23 @@ namespace MLearn{
     public:
 
       // get inertia to estimate how good clustering performs
-      float getInertia(const Eigen::MatrixXf& points)
+      SCALAR_TYPE getInertia(const Eigen::Ref<const MLMatrix <SCALAR_TYPE> > input)
       {
-        float sum = 0;
-        for(size_t i = 0; i < labels_.size(); ++i)
-          sum += getDistance(points.col(i),centroids_.col(labels_[i]));
+        SCALAR_TYPE sum = 0;
+        for(unsigned int i = 0; i < labels_.size(); ++i)
+          sum += getDistance(input.col(i),centroids_.col(labels_[i]));
         return sum;
       }
 
       // run N times with different centroid seeds and keep the best result
-      void run(const Eigen::MatrixXf& points, int K, int N = 1)
+      void run(const Eigen::Ref<const MLMatrix <SCALAR_TYPE> > input, int K, int N = 1)
       {
-        assert(K <= points.cols());
-        centroids_ = Eigen::MatrixXf(points.rows(), K);
-        labels_ = std::vector<int>(points.cols(), -1);
+        assert(K <= input.cols());
+        centroids_.resize(input.rows(), K);
+        labels_ = std::vector<int>(input.cols(), -1);
  
-        Eigen::MatrixXf best_centroids(centroids_.rows(),centroids_.cols());
-        float min_inertia = INFINITY;
+        MLMatrix< SCALAR_TYPE > best_centroids(centroids_.rows(),centroids_.cols());
+        SCALAR_TYPE min_inertia = INFINITY;
         // Utility::VerbosityLogger<1,VERBOSITY_REF>::log(
             // "====== STARTING: KMeans Clustering  ======\n" );
 // 
@@ -181,14 +188,14 @@ namespace MLearn{
         // Utility::VerbosityLogger<1,VERBOSITY_REF>::log(N);
         // Utility::VerbosityLogger<1,VERBOSITY_REF>::log(" times.\n");
 // 
-        for(size_t n = 0; n < N; ++n)
+        for(int n = 0; n < N; ++n)
         {
           // initialize using k++
-          initializeCentroids(points);
+          initializeCentroids(input);
           // run k means
-          runAfterInitialization(points);
+          runAfterInitialization(input);
           // if inertia is min, store final centroids
-          float inertia = getInertia(points);
+          SCALAR_TYPE inertia = getInertia(input);
           // Utility::VerbosityLogger<2,VERBOSITY_REF>::log( n );
           // Utility::VerbosityLogger<2,VERBOSITY_REF>::log( ") Final inertia =  " );
           // Utility::VerbosityLogger<2,VERBOSITY_REF>::log( inertia );
@@ -203,7 +210,7 @@ namespace MLearn{
         // save centroids which gave the lowest inertia
         centroids_ = best_centroids;
         // update labels accordingly
-        updateLabels(points);
+        updateLabels(input);
         // Utility::VerbosityLogger<1,VERBOSITY_REF>::log( 
             // "====== DONE: KMeans Clustering  ======\n" );
 
@@ -216,7 +223,7 @@ namespace MLearn{
       }
       
       // get cluster centroids
-      Eigen::MatrixXf getClusterCentroids()
+     const MLMatrix< SCALAR_TYPE >& getClusterCentroids()
       {
         return(centroids_);
       }

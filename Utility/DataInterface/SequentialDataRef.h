@@ -13,13 +13,13 @@ namespace MLearn{
 
 			template < 	typename ScalarType,
 						typename IndexType >
-			class SequentialDataRef: public SequentialDataInterface<ScalarType,IndexType,SequentialData<ScalarType,IndexType>> {
+			class SequentialDataRef: public SequentialDataInterface<ScalarType,IndexType,SequentialDataRef<ScalarType,IndexType>> {
 			public:
 				typedef ScalarType Scalar;
 				typedef IndexType Index;
-				typedef SequentialDataInterface<ScalarType,IndexType,SequentialData<ScalarType,IndexType>> Interface;
+				typedef SequentialDataInterface<ScalarType,IndexType,SequentialDataRef<ScalarType,IndexType>> Interface;
 			public:
-				SequentialData(const MLMatrix<ScalarType>& _input,const MLMatrix<ScalarType>& _output,const Eigen::Ref< const MLMatrix<IndexType> > _info):
+				SequentialDataRef(const MLMatrix<ScalarType>& _input,const MLMatrix<ScalarType>& _output,const Eigen::Ref< const MLMatrix<IndexType> > _info):
 					Interface(_info),
 					input_data_(_input),
 					output_data_(_output)

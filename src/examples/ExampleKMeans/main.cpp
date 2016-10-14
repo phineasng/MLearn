@@ -62,7 +62,7 @@ int main(int argc, char* argv[]){
   Eigen::MatrixXd points = PointsInCircle(n_points);
  
   // 2) cluster them using kmeans
-  KMeans<double,3> clustering(1e3);
+  KMeans<double,3,Clustering::SquaredEuclidianDistance> clustering(1e3);
   
   // option A) run 10 times with kmeans ++ init, keep the best result
   clustering.run(points,K,10,true);

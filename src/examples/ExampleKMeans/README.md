@@ -20,5 +20,4 @@ The following image shows 1 million points clustered into 14
 clusters, with a kmeans++ initialization.
 
 
-![](https://github.com/phineasng/MLearn/blob/master/src/examples/ExampleKMeans/img/14.png)
-
+![](./img/14.png = 250x)

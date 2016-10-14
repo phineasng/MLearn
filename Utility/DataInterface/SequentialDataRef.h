@@ -13,22 +13,22 @@ namespace MLearn{
 
 			template < 	typename ScalarType,
 						typename IndexType >
-			class SequentialDataRef: public SequentialDataInterface<ScalarType,IndexType,SequentialData<ScalarType,IndexType>> {
+			class SequentialDataRef: public SequentialDataInterface<ScalarType,IndexType,SequentialDataRef<ScalarType,IndexType>> {
 			public:
 				typedef ScalarType Scalar;
 				typedef IndexType Index;
-				typedef SequentialDataInterface<ScalarType,IndexType,SequentialData<ScalarType,IndexType>> Interface;
+				typedef SequentialDataInterface<ScalarType,IndexType,SequentialDataRef<ScalarType,IndexType>> Interface;
 			public:
-				SequentialData(const MLMatrix<ScalarType>& _input,const MLMatrix<ScalarType>& _output,const Eigen::Ref< const MLMatrix<IndexType> > _info):
+				SequentialDataRef(const MLMatrix<ScalarType>& _input,const MLMatrix<ScalarType>& _output,const Eigen::Ref< const MLMatrix<IndexType> > _info):
 					Interface(_info),
 					input_data_(_input),
 					output_data_(_output)
 				{}
 				const Eigen::Ref< const MLMatrix<ScalarType> > getInput( IndexType idx ) const{
-					return input_data_.block(0,info(Interface::start_in_idx,idx),input_data_.rows(),info(Interface::n_inputs_idx,idx));
+					return input_data_.block(0,Interface::info(Interface::start_in_idx,idx),input_data_.rows(),Interface::info(Interface::n_inputs_idx,idx));
 				}
 				const Eigen::Ref< const MLMatrix<ScalarType> > getOutput( IndexType idx ) const{
-					return output_data_.block(0,info(Interface::start_out_idx,idx),output_data_.rows(),info(Interface::n_outputs_idx,idx));
+					return output_data_.block(0,Interface::info(Interface::start_out_idx,idx),output_data_.rows(),Interface::info(Interface::n_outputs_idx,idx));
 				}
 			private:
 				const MLMatrix<ScalarType>& input_data_;

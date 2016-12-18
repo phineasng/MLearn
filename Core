@@ -2,3 +2,4 @@
 #include "Base/MLearnCommonFuncs.h"
 #include "Base/MLearnMacros.h"
 #include "Base/MLearnLossFunction.h"
+#include "Base/MLearnDualNumber.h"

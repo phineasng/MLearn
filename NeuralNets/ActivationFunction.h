@@ -54,9 +54,9 @@ namespace MLearn{
 			static inline ScalarType evaluate( ScalarType x ){
 				static_assert(std::is_floating_point<ScalarType>::value,"The scalar type has to be floating point");
 				if (signbit(x)){
-					return ScalarType(1);
-				}else{
 					return ScalarType(0);
+				}else{
+					return ScalarType(1);
 				}
 			}
 
@@ -191,7 +191,7 @@ namespace MLearn{
 				if ( x > ScalarType(100) ){
 					return x;
 				}
-				return std::log(1 + std::exp(x));
+				return std::log(ScalarType(1) + std::exp(x));
 			}
 
 			template< 	typename ScalarType >

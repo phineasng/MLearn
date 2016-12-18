@@ -15,6 +15,10 @@
 // STL includes
 #include <type_traits>
 #include <iostream>
+#include <cmath>
+
+// Eigen 
+#include <Eigen/Core>
 
 namespace MLearn{
 	/*!
@@ -39,7 +43,7 @@ namespace MLearn{
 				dual_flag(std::move(ref_dual.dual_flag)) {}
 		MLDualNumber(const FLOAT& x): v(x) {}
 		// implicit conversion to float
-		operator FLOAT() const { return v; }
+		//operator FLOAT() const { return v; }
 		// assignment operators
 		MLDualNumber& operator=(const MLDualNumber& ref_dual){
 			dual_flag = ref_dual.dual_flag;
@@ -127,7 +131,7 @@ namespace MLearn{
 				return x; 
 			}else{
 				MLDualNumber res(y);
-				res.v += x;
+				res.v += x.v;
 				return res;
 			}
 		}
@@ -182,11 +186,13 @@ namespace MLearn{
 		}
 		inline friend MLDualNumber operator-(FLOAT x, const MLDualNumber& y){
 			MLDualNumber res(y);
-			res.v -= x;
+			res.v = x - res.v;
+			res.partial_eps *= FLOAT(-1.0);
 			return res;
 		}
 		inline friend MLDualNumber operator-(FLOAT x, MLDualNumber&& y){
-			y.v -= x;
+			y.v = x - y.v;
+			if (y.dual_flag) y.partial_eps *= FLOAT(-1.0);
 			return y;
 		}
 		inline friend MLDualNumber operator-(const MLDualNumber& x,FLOAT y){
@@ -204,13 +210,15 @@ namespace MLearn{
 				return x; 
 			}else{
 				MLDualNumber res(y);
-				res.v -= x;
+				res.v = x.v - y.v;
+				res.partial_eps *= FLOAT(-1.0);
 				return res;
 			}
 		}
 		inline friend MLDualNumber operator-(const MLDualNumber& x, MLDualNumber&& y){
 			if (y.dual_flag){
-				y -= x;
+				y.v = x.v - y.v;
+				y.partial_eps = x.partial_eps - y.partial_eps;
 				return y; 
 			}else{
 				MLDualNumber res(x);
@@ -223,7 +231,8 @@ namespace MLearn{
 				x -= y;
 				return x;
 			}else if (y.dual_flag){
-				y -= x;
+				y.v = x.v - y.v;
+				y.partial_eps *= FLOAT(-1.0);
 				return y;
 			}else{
 				x.v -= y.v;
@@ -300,7 +309,8 @@ namespace MLearn{
 				x *= y;
 				return x;
 			}else if (y.dual_flag){
-				y *= x;
+				y.v *= x.v;
+				y.partial_eps *= x.v;
 				return y;
 			}else{
 				x.v *= y.v;
@@ -388,13 +398,341 @@ namespace MLearn{
 			}
 		}
 		// COMMON MATHEMATICAL FUNCTIONS
-		 
-
+		// cosine
+		inline friend MLDualNumber cos(const MLDualNumber& x){
+			MLDualNumber res(x);
+			res.partial_eps *= -std::sin(res.v);
+			res.v = std::cos(res.v);
+			return res;
+		} 
+		inline friend MLDualNumber cos(MLDualNumber&& x){
+			if (x.dual_flag) x.partial_eps *= -std::sin(x.v);
+			x.v = std::cos(x.v);
+			return x;
+		} 
+		// sine
+		inline friend MLDualNumber sin(const MLDualNumber& x){
+			MLDualNumber res(x);
+			res.partial_eps *= std::cos(res.v);
+			res.v = std::sin(res.v);
+			return res;
+		} 
+		inline friend MLDualNumber sin(MLDualNumber&& x){
+			if (x.dual_flag) x.partial_eps *= std::cos(x.v);
+			x.v = std::sin(x.v);
+			return x;
+		} 
+		// tangent
+		inline friend MLDualNumber tan(const MLDualNumber& x){
+			MLDualNumber res(x);
+			FLOAT c = std::cos(res.v);
+			res.partial_eps /= c*c;
+			res.v = std::tan(res.v);
+			return res;
+		} 
+		inline friend MLDualNumber tan(MLDualNumber&& x){
+			if (x.dual_flag){
+				FLOAT c = std::cos(x.v);
+				x.partial_eps /= c*c;	
+			} 
+			x.v = std::tan(x.v);
+			return x;
+		} 
+		// acos
+		inline friend MLDualNumber acos(const MLDualNumber& x){
+			MLDualNumber res(x);
+			res.v = std::acos(res.v);
+			res.partial_eps *= -1.0/std::sqrt(1.0-x.v*x.v);
+			return res;
+		} 
+		inline friend MLDualNumber acos(MLDualNumber&& x){
+			if (x.dual_flag){
+				x.partial_eps *= -1.0/std::sqrt(1.0-x.v*x.v);	
+			} 
+			x.v = std::acos(x.v);
+			return x;
+		} 
+		// asin
+		inline friend MLDualNumber asin(const MLDualNumber& x){
+			MLDualNumber res(x);
+			res.v = std::asin(res.v);
+			res.partial_eps *= 1.0/std::sqrt(1.0-x.v*x.v);
+			return res;
+		} 
+		inline friend MLDualNumber asin(MLDualNumber&& x){
+			if (x.dual_flag){
+				x.partial_eps *= 1.0/std::sqrt(1.0-x.v*x.v);	
+			} 
+			x.v = std::asin(x.v);
+			return x;
+		} 
+		// atan
+		inline friend MLDualNumber atan(const MLDualNumber& x){
+			MLDualNumber res(x);
+			res.v = std::atan(res.v);
+			res.partial_eps *= 1.0/(1.0+x.v*x.v);
+			return res;
+		} 
+		inline friend MLDualNumber atan(MLDualNumber&& x){
+			if (x.dual_flag){
+				x.partial_eps *= 1.0/(1.0+x.v*x.v);	
+			} 
+			x.v = std::atan(x.v);
+			return x;
+		} 
+		// cosh
+		inline friend MLDualNumber cosh(const MLDualNumber& x){
+			MLDualNumber res(x);
+			res.v = std::cosh(res.v);
+			res.partial_eps *= std::sinh(x.v);
+			return res;
+		} 
+		inline friend MLDualNumber cosh(MLDualNumber&& x){
+			if (x.dual_flag){
+				x.partial_eps *= std::sinh(x.v);	
+			} 
+			x.v = std::cosh(x.v);
+			return x;
+		} 
+		// sinh
+		inline friend MLDualNumber sinh(const MLDualNumber& x){
+			MLDualNumber res(x);
+			res.v = std::sinh(res.v);
+			res.partial_eps *= std::cosh(x.v);
+			return res;
+		} 
+		inline friend MLDualNumber sinh(MLDualNumber&& x){
+			if (x.dual_flag){
+				x.partial_eps *= std::cosh(x.v);	
+			} 
+			x.v = std::sinh(x.v);
+			return x;
+		} 
+		// tanh
+		inline friend MLDualNumber tanh(const MLDualNumber& x){
+			MLDualNumber res(x);
+			res.v = std::tanh(res.v);
+			res.partial_eps *= 1.0 - res.v*res.v;
+			return res;
+		} 
+		inline friend MLDualNumber tanh(MLDualNumber&& x){
+			x.v = std::tanh(x.v);
+			if (x.dual_flag){
+				x.partial_eps *= 1.0 - x.v*x.v;	
+			} 
+			return x;
+		} 
+		// acosh
+		inline friend MLDualNumber acosh(const MLDualNumber& x){
+			MLDualNumber res(x);
+			res.v = std::acosh(res.v);
+			res.partial_eps *= 1.0/(std::sqrt(x.v - 1.0)*std::sqrt(x.v + 1.0));
+			return res;
+		} 
+		inline friend MLDualNumber acosh(MLDualNumber&& x){
+			if (x.dual_flag){
+				x.partial_eps *= 1.0/(std::sqrt(x.v - 1.0)*std::sqrt(x.v + 1.0));	
+			} 
+			x.v = std::acosh(x.v);
+			return x;
+		} 
+		// asinh
+		inline friend MLDualNumber asinh(const MLDualNumber& x){
+			MLDualNumber res(x);
+			res.v = std::asinh(res.v);
+			res.partial_eps *= 1.0/std::sqrt(x.v*x.v + 1.0);
+			return res;
+		} 
+		inline friend MLDualNumber asinh(MLDualNumber&& x){
+			if (x.dual_flag){
+				x.partial_eps *= 1.0/std::sqrt(x.v*x.v + 1.0);	
+			} 
+			x.v = std::asinh(x.v);
+			return x;
+		} 
+		// atanh
+		inline friend MLDualNumber atanh(const MLDualNumber& x){
+			MLDualNumber res(x);
+			res.v = std::atanh(res.v);
+			res.partial_eps *= 1.0/(1.0 - x.v*x.v);
+			return res;
+		} 
+		inline friend MLDualNumber atanh(MLDualNumber&& x){
+			if (x.dual_flag){
+				x.partial_eps *= 1.0/(1.0 - x.v*x.v);	
+			} 
+			x.v = std::atanh(x.v);
+			return x;
+		} 
+		// exp
+		inline friend MLDualNumber exp(const MLDualNumber& x){
+			MLDualNumber res(x);
+			res.v = std::exp(res.v);
+			res.partial_eps *= res.v;
+			return res;
+		} 
+		inline friend MLDualNumber exp(MLDualNumber&& x){
+			x.v = std::exp(x.v);
+			if (x.dual_flag){
+				x.partial_eps *= x.v;	
+			} 
+			return x;
+		} 
+		// log
+		inline friend MLDualNumber log(const MLDualNumber& x){
+			MLDualNumber res(x);
+			res.v = std::log(res.v);
+			res.partial_eps /= x.v;
+			return res;
+		} 
+		inline friend MLDualNumber log(MLDualNumber&& x){
+			if (x.dual_flag){
+				x.partial_eps /= x.v;	
+			} 
+			x.v = std::log(x.v);
+			return x;
+		} 
+		// sqrt
+		inline friend MLDualNumber sqrt(const MLDualNumber& x){
+			MLDualNumber res(x);
+			res.v = std::sqrt(res.v);
+			res.partial_eps *= 0.5/res.v;
+			return res;
+		} 
+		inline friend MLDualNumber sqrt(MLDualNumber&& x){
+			x.v = std::sqrt(x.v);
+			if (x.dual_flag){
+				x.partial_eps *= 0.5/x.v;	
+			} 
+			return x;
+		} 
+		// abs
+		inline friend MLDualNumber abs(const MLDualNumber& x){
+			MLDualNumber res(x);
+			res.v = std::abs(res.v);
+			if ( std::signbit(x.v) ){
+				res.partial_eps *= FLOAT(-1.0);
+			}
+			return res;
+		} 
+		inline friend MLDualNumber abs(MLDualNumber&& x){
+			x.v = std::abs(x.v);
+			if ((x.dual_flag) && std::signbit(x.v)){
+				x.partial_eps *= FLOAT(-1.0);	
+			} 
+			return x;
+		} 
+		// check routines
+		inline friend bool isfinite(const MLDualNumber& x){
+			return std::isfinite(x.v);
+		}
+		inline friend bool isinf(const MLDualNumber& x){
+			return std::isinf(x.v);
+		}
+		inline friend bool isnan(const MLDualNumber& x){
+			return std::isnan(x.v);
+		}
+		inline friend bool isnormal(const MLDualNumber& x){
+			return std::isnormal(x.v);
+		}
+		inline friend bool signbit(const MLDualNumber& x){
+			return std::signbit(x.v);
+		}
+		// comparison routines
+		inline friend bool operator<(const MLDualNumber& x, const MLDualNumber& y){
+			return x.v < y.v;
+		}
+		inline friend bool operator<(const MLDualNumber& x, FLOAT y){
+			return x.v < y;
+		}
+		inline friend bool operator<(FLOAT x, const MLDualNumber& y){
+			return x < y.v;
+		}
+		inline friend bool operator>(const MLDualNumber& x, const MLDualNumber& y){
+			return x.v > y.v;
+		}
+		inline friend bool operator>(const MLDualNumber& x, FLOAT y){
+			return x.v > y;
+		}
+		inline friend bool operator>(FLOAT x, const MLDualNumber& y){
+			return x > y.v;
+		}
+		inline friend bool isgreater(const MLDualNumber& x, const MLDualNumber& y){
+			return std::isgreater(x.v,y.v);
+		}
+		inline friend bool isgreater(const MLDualNumber& x, FLOAT y){
+			return std::isgreater(x.v,y);
+		}
+		inline friend bool isgreater(FLOAT x, const MLDualNumber& y){
+			return std::isgreater(x,y.v);
+		}
+		inline friend bool isgreaterequal(const MLDualNumber& x, const MLDualNumber& y){
+			return std::isgreaterequal(x.v,y.v);
+		}
+		inline friend bool isgreaterequal(const MLDualNumber& x, FLOAT y){
+			return std::isgreaterequal(x.v,y);
+		}
+		inline friend bool isgreaterequal(FLOAT x, const MLDualNumber& y){
+			return std::isgreaterequal(x,y.v);
+		}
+		inline friend bool isless(const MLDualNumber& x, const MLDualNumber& y){
+			return std::isless(x.v,y.v);
+		}
+		inline friend bool isless(const MLDualNumber& x, FLOAT y){
+			return std::isless(x.v,y);
+		}
+		inline friend bool isless(FLOAT x, const MLDualNumber& y){
+			return std::isless(x,y.v);
+		}
+		inline friend bool islessequal(const MLDualNumber& x, const MLDualNumber& y){
+			return std::islessequal(x.v,y.v);
+		}
+		inline friend bool islessequal(const MLDualNumber& x, FLOAT y){
+			return std::islessequal(x.v,y);
+		}
+		inline friend bool islessequal(FLOAT x, const MLDualNumber& y){
+			return std::islessequal(x,y.v);
+		}
+		inline friend bool islessgreater(const MLDualNumber& x, const MLDualNumber& y){
+			return std::islessgreater(x.v,y.v);
+		}
+		inline friend bool islessgreater(const MLDualNumber& x, FLOAT y){
+			return std::islessgreater(x.v,y);
+		}
+		inline friend bool islessgreater(FLOAT x, const MLDualNumber& y){
+			return std::islessgreater(x,y.v);
+		}
+		inline friend bool isunordered(const MLDualNumber& x, const MLDualNumber& y){
+			return std::isunordered(x.v,y.v);
+		}
+		inline friend bool isunordered(const MLDualNumber& x, FLOAT y){
+			return std::isunordered(x.v,y);
+		}
+		inline friend bool isunordered(FLOAT x, const MLDualNumber& y){
+			return std::isunordered(x,y.v);
+		}
 
 	private:
 		bool dual_flag = false;  // flag to indicate if number has been initialised for differentiation
 		FLOAT v;
 		EPS_TYPE partial_eps;
+	};
+
+}
+
+namespace Eigen{
+	template< typename FLOAT > struct NumTraits<MLearn::MLDualNumber<FLOAT>>: NumTraits<FLOAT> {
+		// TODO(phineasng): find better costs (make Eigen::HugeCost work)
+		enum { 
+			ReadCost = 5,
+			AddCost = 5,
+			MulCost = 5,
+		};
+
+		typedef MLearn::MLDualNumber<FLOAT> Real;
+		typedef MLearn::MLDualNumber<FLOAT> NonInteger;
+		typedef MLearn::MLDualNumber<FLOAT> Nested;
+	
 	};
 }
 

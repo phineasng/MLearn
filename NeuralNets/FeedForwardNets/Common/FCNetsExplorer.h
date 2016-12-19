@@ -157,7 +157,7 @@ namespace MLearn{
 							typename DERIVED,
 							typename DERIVED_2,
 							typename DERIVED_3 >
-				void backpropagate( const Eigen::MatrixBase<DERIVED>& weights, const Eigen::MatrixBase<DERIVED_2>& gradient_output, Eigen::MatrixBase<DERIVED_3>& gradient_weights ) const{
+				void backpropagate( const Eigen::MatrixBase<DERIVED>& weights, const Eigen::MatrixBase<DERIVED_2>& gradient_output, Eigen::MatrixBase<DERIVED_3>& gradient_weights ){
 					static_assert( std::is_same<typename DERIVED::Scalar,typename DERIVED_2::Scalar >::value && std::is_same<typename DERIVED::Scalar,typename DERIVED_3::Scalar >::value, "The vectors given as input has to have same scalar type!" );
 					static_assert( std::is_same<typename DERIVED::Scalar,WeightType >::value, "The vectors' scalar type has to be consistent to the declared weight type!" );
 					static_assert( (DERIVED::ColsAtCompileTime == 1) && (DERIVED_2::ColsAtCompileTime == 1) && (DERIVED_3::ColsAtCompileTime == 1), "The inputs have to be column vectors (or consistent structures)!");

@@ -11,6 +11,8 @@
 
 namespace MLearn{
 
+	using namespace std;
+
 	enum class LossType{
 		NONE,
 		INDICATOR,
@@ -119,7 +121,7 @@ namespace MLearn{
 			typename DERIVED::Scalar res = typename DERIVED::Scalar(0);
 			typename DERIVED::Scalar max = output.maxCoeff();
 			res = - output.dot(exp_output);
-			res += exp_output.sum()*( max + std::log( ( output.array() - max ).unaryExpr( std::pointer_to_unary_function< typename DERIVED::Scalar, typename DERIVED::Scalar>(exponential) ).sum() ) );
+			res += exp_output.sum()*( max + log( ( output.array() - max ).unaryExpr( std::pointer_to_unary_function< typename DERIVED::Scalar, typename DERIVED::Scalar>(exponential) ).sum() ) );
 			return res;
 		}
 

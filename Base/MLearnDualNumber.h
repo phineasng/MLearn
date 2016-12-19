@@ -29,7 +29,11 @@ namespace MLearn{
 	template < typename FLOAT >
 	class MLDualNumber{
 		static_assert(std::is_floating_point<FLOAT>::value,"Underlying type must be floating point!");
-		typedef MLVector<FLOAT> EPS_TYPE;
+		typedef MLSparseVector<FLOAT> EPS_TYPE;
+	private:
+		FLOAT v;
+		EPS_TYPE partial_eps;
+		bool dual_flag = false;  // flag to indicate if number has been initialised for differentiation
 	public:
 		// Constructors
 		MLDualNumber() {}
@@ -43,7 +47,7 @@ namespace MLearn{
 				dual_flag(std::move(ref_dual.dual_flag)) {}
 		MLDualNumber(const FLOAT& x): v(x) {}
 		// implicit conversion to float
-		//operator FLOAT() const { return v; }
+		operator uint() const { return uint(v); }
 		// assignment operators
 		MLDualNumber& operator=(const MLDualNumber& ref_dual){
 			dual_flag = ref_dual.dual_flag;
@@ -67,18 +71,19 @@ namespace MLearn{
 		/*!
 		*	\brief 	Initialize number to be a variable for differentiation
 		*/
-		void initialize(const FLOAT& value, size_t partial_idx = 0, size_t n_vars = 1){
+		void initialize(const FLOAT& value, int partial_idx = 0, int n_vars = 1){
 			MLEARN_ASSERT( partial_idx < n_vars , "Not consistent values for initialization");
 			dual_flag = true;
 			v = value;
-			partial_eps = EPS_TYPE::Zero(n_vars);
-			partial_eps[partial_idx] = FLOAT(1.0);
+			partial_eps.resize(n_vars);
+			partial_eps.setZero();
+			if (partial_idx >= 0) partial_eps.coeffRef(partial_idx) = FLOAT(1.0);
 		}
 		bool is_dual() const{ return dual_flag; }
 		FLOAT value() const{ return v; }
-		FLOAT partial_der(size_t partial_idx) const{ 
+		FLOAT partial_der(int partial_idx) const{ 
 			MLEARN_ASSERT(partial_idx < partial_eps.size(), "Requested derivative not available!");
-			return partial_eps[partial_idx]; 
+			return partial_eps.coeff(partial_idx); 
 		}
 		// (friend) misc operators
 		inline friend std::ostream& operator<<(std::ostream& os, const MLDualNumber& dual){
@@ -622,6 +627,16 @@ namespace MLearn{
 			} 
 			return x;
 		} 
+		// ceil
+		inline friend MLDualNumber ceil(const MLDualNumber& x){
+			MLDualNumber res(x);
+			res.v = std::ceil(res.v);
+			return res;
+		} 
+		inline friend MLDualNumber ceil(MLDualNumber&& x){
+			x.v = std::ceil(x.v);
+			return x;
+		} 
 		// check routines
 		inline friend bool isfinite(const MLDualNumber& x){
 			return std::isfinite(x.v);
@@ -711,13 +726,18 @@ namespace MLearn{
 		inline friend bool isunordered(FLOAT x, const MLDualNumber& y){
 			return std::isunordered(x,y.v);
 		}
-
-	private:
-		bool dual_flag = false;  // flag to indicate if number has been initialised for differentiation
-		FLOAT v;
-		EPS_TYPE partial_eps;
 	};
 
+	template< typename FLOAT >
+	struct enables_autodiff< MLDualNumber<FLOAT> >{
+		static const bool value = true;
+	};
+
+}
+
+namespace std{
+	template < typename FLOAT >
+	struct is_floating_point< MLearn::MLDualNumber<FLOAT> >: is_floating_point<FLOAT> {};
 }
 
 namespace Eigen{

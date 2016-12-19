@@ -10,6 +10,8 @@ namespace MLearn{
 
 	namespace NeuralNets{
 
+		using namespace std;
+
 		enum class ActivationType{
 			STEP,
 			LINEAR,
@@ -137,7 +139,7 @@ namespace MLearn{
 			template< 	typename ScalarType >
 			static inline ScalarType evaluate( ScalarType x ){
 				static_assert(std::is_floating_point<ScalarType>::value,"The scalar type has to be floating point");
-				return ScalarType(1)/(ScalarType(1) + std::exp(-x));
+				return ScalarType(1)/(ScalarType(1) + exp(-x));
 			}
 
 			template< 	typename ScalarType >
@@ -163,13 +165,13 @@ namespace MLearn{
 			template< 	typename ScalarType >
 			static inline ScalarType evaluate( ScalarType x ){
 				static_assert(std::is_floating_point<ScalarType>::value,"The scalar type has to be floating point");
-				return std::tanh(x);
+				return tanh(x);
 			}
 
 			template< 	typename ScalarType >
 			static inline ScalarType first_derivative( ScalarType x ){
 				static_assert(std::is_floating_point<ScalarType>::value,"The scalar type has to be floating point");
-				ScalarType temp = ScalarType(1)/std::cosh(x);
+				ScalarType temp = ScalarType(1)/cosh(x);
 				return temp*temp;
 			}
 
@@ -191,7 +193,7 @@ namespace MLearn{
 				if ( x > ScalarType(100) ){
 					return x;
 				}
-				return std::log(ScalarType(1) + std::exp(x));
+				return log(ScalarType(1) + exp(x));
 			}
 
 			template< 	typename ScalarType >

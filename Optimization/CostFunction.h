@@ -54,12 +54,19 @@ namespace MLearn{
 			void compute_gradient( const Eigen::MatrixBase<DERIVED>& x, Eigen::MatrixBase<DERIVED_2>& gradient, const GradientOption< MODE, typename DERIVED::Scalar >& options = GradientOption< MODE, typename DERIVED::Scalar >() ) const{
 				static_assert( (DERIVED::ColsAtCompileTime == 1) && (DERIVED_2::ColsAtCompileTime == 1), "Inputs have to be column vectors (or compatible structures)!");
 				static_assert( std::is_floating_point<typename DERIVED::Scalar>::value && std::is_same<typename DERIVED::Scalar, typename DERIVED_2::Scalar>::value, "Scalar types have to be the same and floating point!");
-				Differentiator<MODE>::compute_gradient(*(static_cast<const Derived*>(this)),x,gradient,options);
+				Differentiator<MODE, enables_autodiff<typename DERIVED::Scalar>::value >::compute_gradient(*(static_cast<const Derived*>(this)),x,gradient,options);
 			}
 			// default functions
 			// -- eval
 			template < 	typename DERIVED >
 			typename DERIVED::Scalar eval( const Eigen::MatrixBase<DERIVED>& x ) const{
+				MLEARN_FORCED_WARNING_MESSAGE("USING DEFAULT IMPLEMENTATION!");
+				return typename DERIVED::Scalar(0);
+			}
+			// -- stochastic eval
+			template < 	typename IndexType,
+						typename DERIVED >
+			typename DERIVED::Scalar stochastic_eval( const Eigen::MatrixBase<DERIVED>& x, const MLVector< IndexType >& idx   ) const{
 				MLEARN_FORCED_WARNING_MESSAGE("USING DEFAULT IMPLEMENTATION!");
 				return typename DERIVED::Scalar(0);
 			}

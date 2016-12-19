@@ -365,6 +365,24 @@ namespace MLearn{
 					return loss;
 
 				}
+				template < 	typename INNER_DERIVED >
+				typename INNER_DERIVED::Scalar stochastic_eval( const Eigen::MatrixBase<INNER_DERIVED>& x, const MLVector<IndexType>& indeces ) const{
+					static_assert(std::is_same<typename DERIVED::Scalar,typename INNER_DERIVED::Scalar>::value, "Scalar types have to be the same!");
+					static_assert(INNER_DERIVED::ColsAtCompileTime == 1, "Input has to be a column vector (or compatible structure)!");
+					typename INNER_DERIVED::Scalar loss = typename INNER_DERIVED::Scalar(0);
+					
+					for ( decltype(inputs.cols()) i = 0; i < indeces.size(); ++i ){
+						IndexType idx = indeces[i];
+						net_explorer.FCNetsExplorer<typename DERIVED::Scalar,IndexType,HiddenLayerActivation,OutputLayerActivation>::template forwardpass< ( R & Regularizer::DROPOUT) == Regularizer::DROPOUT >( x, inputs.col(idx) );
+						loss += LossFunction<L>::evaluate( net_explorer.getActivations().tail( layers[layers.size() - 1] ), outputs.col(idx));
+					}
+					loss /= typename INNER_DERIVED::Scalar(inputs.cols());
+					// L1 or L2 regularization
+					Regulator< ((R & Regularizer::L1) == Regularizer::L1) || ((R & Regularizer::L2) == Regularizer::L2) >::template apply_to_loss<IndexType,R>( layers, x, loss, options );
+
+					return loss;
+
+				}
 				// analytical gradient
 				template < 	typename INNER_DERIVED,
 							typename INNER_DERIVED_2 >

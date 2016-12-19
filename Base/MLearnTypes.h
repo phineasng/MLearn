@@ -1,4 +1,5 @@
 /*!
+*	\file 		MLearnTypes.h
 * 	\brief 		MLearn library structures.
 *	\details 	In this header file, the basic structures 
 *				that will be used in the algorihtm are defined.
@@ -12,6 +13,7 @@
 #define MLEARN_CORE_BASE_TYPES_INCLUDED
 
 #include <Eigen/Core>
+#include <Eigen/SparseCore>
 
 namespace MLearn{	
 
@@ -45,6 +47,15 @@ namespace MLearn{
 	typedef MLVector< long >  		MLVectorl;
 	typedef MLVector< long long > 	MLVectorll;   
 
+	template< typename ScalarType >
+	using MLSparseVector = Eigen::SparseVector< ScalarType >;
+	typedef MLSparseVector< double > 		MLSparseVectord;
+	typedef MLSparseVector< float >   		MLSparseVectorf;
+	typedef MLSparseVector< short >  		MLSparseVectors;
+	typedef MLSparseVector< int >  			MLSparseVectori;
+	typedef MLSparseVector< long >  		MLSparseVectorl;
+	typedef MLSparseVector< long long > 	MLSparseVectorll;  
+
 	// Row Vector typedefs   
 	template< typename ScalarType >
 	using MLRowVector = Eigen::Matrix< ScalarType, 1, Eigen::Dynamic, Eigen::RowMajor | Eigen::AutoAlign >;
@@ -54,6 +65,11 @@ namespace MLearn{
 	typedef MLRowVector< int >  		MLRowVectori;
 	typedef MLRowVector< long >  		MLRowVectorl;
 	typedef MLRowVector< long long > 	MLRowVectorll;   
+
+	template< typename ScalarType >
+	struct enables_autodiff{
+		static const bool value = false;
+	};
 
 }
 #endif

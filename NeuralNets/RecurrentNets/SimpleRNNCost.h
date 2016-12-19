@@ -67,6 +67,38 @@ namespace MLearn{
 					return loss;
 
 				}
+				// evaluation
+				template < 	typename DERIVED >
+				typename DERIVED::Scalar stochastic_eval( const Eigen::MatrixBase<DERIVED>& x, const MLVector<IndexType>& indeces ) const{
+					static_assert(std::is_same<typename DERIVED::Scalar,ScalarType>::value, "Scalar types have to be the same!");
+					static_assert(DERIVED::ColsAtCompileTime == 1, "Input has to be a column vector (or compatible structure)!");
+					typename DERIVED::Scalar loss = typename DERIVED::Scalar(0);
+					rnn_ref_.attachWeightsToCell(x);
+					rnn_ref_.resetHiddenState();
+					for ( IndexType i = 0; i < indeces.size(); ++i ){
+						IndexType idx = indeces[i];
+						rnn_ref_.forwardpass_unroll( 	data_interface_.getInput(idx), 
+														data_interface_.getDelay(idx), 
+														data_interface_.getNOutputSteps(idx),
+														data_interface_.getReset(idx));
+
+						const Eigen::Ref< const MLMatrix<ScalarType>> outputs = rnn_ref_.getAllOutputs();
+						const Eigen::Ref< const MLMatrix<ScalarType>> expected_outputs = data_interface_.getOutput(idx);
+
+						for ( size_t out_idx = 0; out_idx < data_interface_.getNOutputSteps(idx); ++out_idx ){
+
+							loss += LossFunction<L>::evaluate( outputs.col(out_idx), expected_outputs.col(out_idx) );
+
+						}
+
+					}
+					loss /= ScalarType(indeces.size());
+					// L1 or L2 regularization
+					// TODO(phineasng)
+
+					return loss;
+
+				}
 				// analytical gradient
 				template < 	typename DERIVED,
 							typename DERIVED_2 >

@@ -42,7 +42,7 @@ namespace MLearn{
 		};
 
 		// Concrete  Differentiator
-		template < DifferentiationMode MODE >
+		template < DifferentiationMode MODE, bool AUTO_DIFF = false >
 		class Differentiator{
 		public:
 			// --- gradient
@@ -59,8 +59,8 @@ namespace MLearn{
 
 		// Specialization
 		// --- analytical
-		template <>
-		class Differentiator<DifferentiationMode::ANALYTICAL>{
+		template < bool AUTO_DIFF >
+		class Differentiator<DifferentiationMode::ANALYTICAL, AUTO_DIFF>{
 		public:
 			// --- gradient
 			template < 	typename DifferentiableCost, 
@@ -74,10 +74,35 @@ namespace MLearn{
 				cost.compute_analytical_gradient(x,gradient);
 			}	
 		};
+		// --- analytical autodiff
+		template <>
+		class Differentiator<DifferentiationMode::ANALYTICAL, true>{
+		public:
+			// --- gradient
+			template < 	typename DifferentiableCost, 
+						typename IndexType, 
+						typename DERIVED,
+				   		typename DERIVED_2 >
+			static inline void compute_gradient(const DifferentiableCost& cost,const Eigen::MatrixBase<DERIVED>& x, Eigen::MatrixBase<DERIVED_2>& gradient, const GradientOption< DifferentiationMode::ANALYTICAL, typename DERIVED::Scalar, IndexType >& options = GradientOption< DifferentiationMode::ANALYTICAL, typename DERIVED::Scalar, IndexType >() ){
+				static_assert( (DERIVED::ColsAtCompileTime == 1) && (DERIVED_2::ColsAtCompileTime == 1), "Inputs have to be column vectors (or compatible structures)!" );
+				static_assert( std::is_floating_point<typename DERIVED::Scalar>::value && std::is_same<typename DERIVED::Scalar, typename DERIVED_2::Scalar>::value, "Scalar types have to be the same and floating point!" );
+				static_assert( std::is_integral<IndexType>::value && std::is_unsigned<IndexType>::value, "IndexType has to be unsigned integer!" );
+				
+				MLVector<typename DERIVED::Scalar> x0(x.size());
+				for ( decltype(x.size()) i = 0; i < x.size(); ++i ){
+					x0[i].initialize(x[i].value(), i, x.size());
+				}
+				typename DERIVED::Scalar c = cost.eval(x0);
+				gradient.resize(x.size());
+				for ( decltype(x.size()) i = 0; i < x.size(); ++i ){
+					gradient[i] = c.partial_der(i);
+				}
+			}	
+		};
 
 		// --- numerical forward
-		template <>
-		class Differentiator<DifferentiationMode::NUMERICAL_FORWARD>{
+		template < bool AUTO_DIFF >
+		class Differentiator<DifferentiationMode::NUMERICAL_FORWARD, AUTO_DIFF>{
 		public:
 			// --- gradient
 			template < 	typename DifferentiableCost, 
@@ -100,8 +125,8 @@ namespace MLearn{
 			}
 		};
 		// --- numerical central
-		template <>
-		class Differentiator<DifferentiationMode::NUMERICAL_CENTRAL>{
+		template < bool AUTO_DIFF >
+		class Differentiator<DifferentiationMode::NUMERICAL_CENTRAL, AUTO_DIFF>{
 		public:
 			// --- gradient
 			template < 	typename DifferentiableCost, 
@@ -126,8 +151,8 @@ namespace MLearn{
 			}
 		};
 		// --- numerical backward
-		template <>
-		class Differentiator<DifferentiationMode::NUMERICAL_BACKWARD>{
+		template < bool AUTO_DIFF >
+		class Differentiator<DifferentiationMode::NUMERICAL_BACKWARD, AUTO_DIFF>{
 		public:
 			// --- gradient
 			template < 	typename DifferentiableCost, 
@@ -150,8 +175,8 @@ namespace MLearn{
 			}
 		};
 		// --- stochastic
-		template <>
-		class Differentiator<DifferentiationMode::STOCHASTIC>{
+		template < bool AUTO_DIFF >
+		class Differentiator<DifferentiationMode::STOCHASTIC, AUTO_DIFF >{
 		public:
 			// --- gradient
 			template < 	typename DifferentiableCost, 
@@ -163,6 +188,30 @@ namespace MLearn{
 				static_assert( std::is_floating_point<typename DERIVED::Scalar>::value && std::is_same<typename DERIVED::Scalar, typename DERIVED_2::Scalar>::value, "Scalar types have to be the same and floating point!" );
 				static_assert( std::is_integral<IndexType>::value && std::is_unsigned<IndexType>::value, "IndexType has to be unsigned integer!" );
 				cost.compute_stochastic_gradient(x,gradient,options.to_sample);
+			}
+		};
+		template <>
+		class Differentiator<DifferentiationMode::STOCHASTIC, true >{
+		public:
+			// --- gradient
+			template < 	typename DifferentiableCost, 
+						typename IndexType, 
+						typename DERIVED,
+				   		typename DERIVED_2 >
+			static inline void compute_gradient(const DifferentiableCost& cost,const Eigen::MatrixBase<DERIVED>& x, Eigen::MatrixBase<DERIVED_2>& gradient, const GradientOption< DifferentiationMode::STOCHASTIC, typename DERIVED::Scalar, IndexType >& options = GradientOption< DifferentiationMode::STOCHASTIC, typename DERIVED::Scalar, IndexType >() ){
+				static_assert( (DERIVED::ColsAtCompileTime == 1) && (DERIVED_2::ColsAtCompileTime == 1), "Inputs have to be column vectors (or compatible structures)!" );
+				static_assert( std::is_floating_point<typename DERIVED::Scalar>::value && std::is_same<typename DERIVED::Scalar, typename DERIVED_2::Scalar>::value, "Scalar types have to be the same and floating point!" );
+				static_assert( std::is_integral<IndexType>::value && std::is_unsigned<IndexType>::value, "IndexType has to be unsigned integer!" );
+				
+				MLVector<typename DERIVED::Scalar> x0(x.size());
+				for ( decltype(x.size()) i = 0; i < x.size(); ++i ){
+					x0[i].initialize(x[i].value(), i, x.size());
+				}
+				typename DERIVED::Scalar c = cost.stochastic_eval(x0, options.to_sample);
+				gradient.resize(x.size());
+				for ( decltype(x.size()) i = 0; i < x.size(); ++i ){
+					gradient[i] = c.partial_der(i);
+				}
 			}
 		};
 

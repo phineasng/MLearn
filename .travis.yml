@@ -1,5 +1,5 @@
 language: cpp
-sudo: required
+sudo: false
 cache:
   ccache: true
   directories:
@@ -25,7 +25,7 @@ addons:
 
 # install dependencies
 install:
-  - ./test/setup/install_dependencies.sh
+  - bash ./test/setup/install_dependencies.sh
 
 before_script:
   - mkdir ./test/test_build

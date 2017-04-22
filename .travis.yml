@@ -15,7 +15,7 @@ env:
     - INCLUDE_PATH='/usr/include'
 os: linux
 dist: trusty
-compiler: gcc
+compiler: g++
 addons:
   apt:
     sources: 

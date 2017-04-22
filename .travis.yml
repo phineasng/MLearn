@@ -25,6 +25,8 @@ addons:
       - cmake
 
 # install dependencies
+before_install:
+  - mkdir ${INCLUDE_PATH}
 install:
   - bash ./test/setup/install_dependencies.sh
 

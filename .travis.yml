@@ -25,12 +25,9 @@ addons:
       - cmake
 
 # install dependencies
-before_install:
-  - mkdir -p ${INCLUDE_PATH}
-install:
-  - bash ./test/setup/install_dependencies.sh
-
 before_script:
+  - mkdir -p ${INCLUDE_PATH}
+  - bash ./test/setup/install_dependencies.sh
   - mkdir ./test/test_build
   - cd ./test/test_build
   - export CXX="g++-4.9"

@@ -29,8 +29,8 @@ before_install:
   - mkdir -p ${TEST_INCLUDE_PATH}
   - mkdir -p ${TEST_CMAKE}
 install:
-  - sudo apt-get update -qq
-  - sudo apt-get install -y -qq lcov curl
+  - apt-get update -qq
+  - apt-get install -y -qq lcov curl
   - bash ./test/setup/install_dependencies.sh
 
 

@@ -12,6 +12,7 @@ env:
     - CCACHE_CPP2=1
     - COMPILER='ccache g++-4.9'
     - TMP_DIR='/tmp'
+    - INCLUDE_PATH='/usr/include'
 os: linux
 dist: trusty
 compiler: gcc

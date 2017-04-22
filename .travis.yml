@@ -24,13 +24,13 @@ addons:
     packages: 
       - g++-4.9
       - cmake
+      - lcov
+      - curl
 
 before_install:
   - mkdir -p ${TEST_INCLUDE_PATH}
   - mkdir -p ${TEST_CMAKE}
 install:
-  - apt-get update -qq
-  - apt-get install -y -qq lcov curl
   - bash ./test/setup/install_dependencies.sh
 
 

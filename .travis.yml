@@ -10,6 +10,8 @@ env:
     - CCACHE_COMPRESS=1
     - CCACHE_MAXSIZE=200M
     - CCACHE_CPP2=1
+    - COMPILER='ccache g++-4.9'
+    - TMP_DIR='/tmp'
 os: linux
 dist: trusty
 compiler: gcc
@@ -20,9 +22,6 @@ addons:
     packages: 
       - g++-4.9
       - cmake
-env: 
-  - COMPILER='ccache g++-4.9'
-  - TMP_DIR='/tmp'
 
 # install dependencies
 install:

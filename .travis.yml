@@ -39,6 +39,8 @@ before_script:
   - mkdir ./test/test_build
   - cd ./test/test_build
   - export CXX="g++-4.9"
+  - export COVERALLS_SERVICE_NAME=travis-ci
+  - export COVERALLS_REPO_TOKEN=TpmxcbIzHLa4FhBKuc8y0WQhzFoQMpQVO
   - cmake -DCOVERALLS=ON -DCMAKE_BUILD_TYPE=Debug ..
 
 script:

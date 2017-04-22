@@ -12,7 +12,7 @@ env:
     - CCACHE_CPP2=1
     - COMPILER='ccache g++-4.9'
     - TMP_DIR='/tmp'
-    - INCLUDE_PATH='~/test_dependencies/include'
+    - INCLUDE_PATH=$TRAVIS_BUILD_DIR'/other_includes'
 os: linux
 dist: trusty
 compiler: g++

@@ -26,8 +26,7 @@ addons:
 
 # install dependencies
 install:
-  - chmod +x ./test/setup/install_dependencies.sh
-  - ./test/setup/install_dependencies.sh
+  - bash ./test/setup/install_dependencies.sh
 
 before_script:
   - mkdir ./test/test_build

@@ -1,4 +1,6 @@
 # MLearn
+[![Build Status](https://travis-ci.org/phineasng/MLearn.svg?branch=master)](https://travis-ci.org/phineasng/MLearn)
+[![Coverage Status](https://coveralls.io/repos/github/phineasng/MLearn/badge.svg?branch=travis_and_coveralls)](https://coveralls.io/github/phineasng/MLearn?branch=travis_and_coveralls)
 ## Description
 This library is a personal project to refresh and deepen the knowledge of Machine Learning theory and algorithms. 
 Due to a recently developed interest in deep learning, the library may reveal a particular focus on topics from this subfield.

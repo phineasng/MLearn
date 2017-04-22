@@ -12,7 +12,8 @@ env:
     - CCACHE_CPP2=1
     - COMPILER='ccache g++-4.9'
     - TMP_DIR='/tmp'
-    - INCLUDE_PATH=$TRAVIS_BUILD_DIR/other_includes
+    - TEST_INCLUDE_PATH=$TRAVIS_BUILD_DIR/test_includes
+    - TEST_CMAKE=$TRAVIS_BUILD_DIR/test_cmake
 os: linux
 dist: trusty
 compiler: g++
@@ -25,19 +26,24 @@ addons:
       - cmake
 
 before_install:
-  - mkdir -p ${INCLUDE_PATH}
+  - mkdir -p ${TEST_INCLUDE_PATH}
+  - mkdir -p ${TEST_CMAKE}
 install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -y -qq lcov curl
   - bash ./test/setup/install_dependencies.sh
+
 
 # install dependencies
 before_script:
   - mkdir ./test/test_build
   - cd ./test/test_build
   - export CXX="g++-4.9"
-  - cmake ..
+  - cmake -DCOVERALLS=ON -DCMAKE_BUILD_TYPE=Debug ..
 
 script:
   - make
+  - make coveralls
   
 
 

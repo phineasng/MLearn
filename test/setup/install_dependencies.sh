@@ -1,8 +1,17 @@
 #!/bin/bash
 
-# get dependencies from the repos
+# get dependencies from repos
+
 # - Eigen
-mkdir $TMP_DIR'/Eigen'
-wget https://bitbucket.org/eigen/eigen/get/f3a22f35b044.zip -O $TMP_DIR'/Eigen/eigen_repo.zip'
-unzip -qq $TMP_DIR'/Eigen/eigen_repo.zip' -d $TMP_DIR'/Eigen/'
-mv $TMP_DIR'/Eigen/eigen-eigen-f3a22f35b044/Eigen' $INCLUDE_PATH'/Eigen'
+export TMP_EIGEN=$TMP_DIR/Eigen
+mkdir $TMP_EIGEN
+wget https://bitbucket.org/eigen/eigen/get/f3a22f35b044.zip -O $TMP_EIGEN'/eigen_repo.zip'
+unzip -qq $TMP_EIGEN'/eigen_repo.zip' -d $TMP_EIGEN
+mv $TMP_EIGEN'/eigen-eigen-f3a22f35b044/Eigen' $TEST_INCLUDE_PATH'/Eigen'
+
+# - 
+export TMP_COVERALLS=$TMP_DIR/CoverallsCMake
+mkdir $TMP_COVERALLS
+wget https://github.com/JoakimSoderberg/coveralls-cmake/archive/master.zip -O $TMP_COVERALLS'/coveralls.zip'
+unzip -qq $TMP_COVERALLS'/coveralls.zip' -d $TMP_COVERALLS
+mv $TMP_COVERALLS'/coveralls-cmake-master/cmake/*' $TEST_CMAKE

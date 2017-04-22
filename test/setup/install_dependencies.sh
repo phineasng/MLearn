@@ -14,4 +14,4 @@ export TMP_COVERALLS=$TMP_DIR/CoverallsCMake
 mkdir $TMP_COVERALLS
 wget https://github.com/JoakimSoderberg/coveralls-cmake/archive/master.zip -O $TMP_COVERALLS'/coveralls.zip'
 unzip -qq $TMP_COVERALLS'/coveralls.zip' -d $TMP_COVERALLS
-mv $TMP_COVERALLS'/coveralls-cmake-master/cmake/*' $TEST_CMAKE
+mv $TMP_COVERALLS'/coveralls-cmake-master/cmake'/* $TEST_CMAKE'/'

@@ -17,4 +17,4 @@ unzip -qq $TMP_COVERALLS'/coveralls.zip' -d $TMP_COVERALLS
 mv $TMP_COVERALLS'/coveralls-cmake-master/cmake'/* $TEST_CMAKE'/'
 
 # - Catch (testing framework)
-wget https://github.com/philsquared/Catch/releases/download/v1.9.1/catch.hpp -O $TEST_INCLUDE_PATH'/'
+wget https://github.com/philsquared/Catch/releases/download/v1.9.1/catch.hpp -O $TEST_INCLUDE_PATH'/catch.hpp'

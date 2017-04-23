@@ -11,6 +11,7 @@
 #define MLEARN_CORE_BASE_COMMON_FUNCS_INCLUDED
 
 #include <cmath>
+#include <type_traits>
 
 namespace MLearn{
 
@@ -32,6 +33,49 @@ namespace MLearn{
 	template < typename inputType >
 	inline inputType exponential( inputType value ){
 		return exp(value);
+	}
+
+	// odd check
+	template < typename IntegerType >
+	inline bool is_odd(IntegerType x){
+		static_assert(std::is_integral<IntegerType>::value,  
+			"Only integer types supported. Sorry!");
+		return x & 1;
+	}
+
+	// exponentiation by squaring
+	template < typename BaseType, typename ExpType >
+	inline BaseType ml_pow(const BaseType& base, const ExpType& exp){
+		static_assert(std::is_integral<ExpType>::value, 
+			"Only integer values are supported as exponents. Sorry!");
+		if ( (exp <= 10) && (exp >= -10) ){ // constants to be optimised 
+			BaseType res = 1;
+			for (ExpType i = 1; i <= exp; ++i){
+				res *= base;
+			}
+			return res;
+		}else{ // exponentiation by squaring
+			BaseType value = base;
+			BaseType result = 1;
+			ExpType exponent = exp;
+			if (exponent < 0){
+				exponent = -exponent;
+				value = BaseType(1)/base;
+			}else if(exponent == 0){
+				return BaseType(1);
+			}
+			while (exponent > 1){
+				if ( is_odd(exponent) ){
+					result *= value;
+					value *= value;
+					exponent = (exponent - 1) / 2;
+				}else{
+					value *= value;
+					exponent = exponent / 2;
+				}
+			}
+			return value*result;
+		}
 	}
 
 } // End MLearn namespace

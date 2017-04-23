@@ -13,6 +13,7 @@ env:
     - COMPILER='ccache g++-4.9'
     - TMP_DIR='/tmp'
     - TEST_INCLUDE_PATH=$TRAVIS_BUILD_DIR/test_includes
+    - TEST_SRC_PATH=$TRAVIS_BUILD_DIR/test
     - TEST_CMAKE=$TRAVIS_BUILD_DIR/test_cmake
 os: linux
 dist: trusty

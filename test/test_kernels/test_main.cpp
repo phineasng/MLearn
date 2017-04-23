@@ -15,7 +15,7 @@ TEST_CASE(){
 	int dim = 2;
 	using namespace MLearn;
 	
-	MLearnVector<FT> x(dim), y(dim);
+	MLVector<FT> x(dim), y(dim);
 
 	x[0] = 0.29;
 	x[1] = -0.37;

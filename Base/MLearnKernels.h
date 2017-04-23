@@ -19,14 +19,14 @@
 	template < typename DERIVED1, typename DERIVED2 >\
 	typename DERIVED1::Scalar compute(const Eigen::MatrixBase<DERIVED1>& x,\
 									  const Eigen::MatrixBase<DERIVED2>& y){\
-		static_assert(DERIVED1::ColsAtCompileTime == 1,\ 
+		static_assert(DERIVED1::ColsAtCompileTime == 1,\
 			"First input has to be a column vector(or compatible structure)");\
 		static_assert(DERIVED2::ColsAtCompileTime == 1,\
 			"Second input has to be a column vector(or compatible structure)");\
-		static_assert(std::is_floating_point<typename DERIVED::Scalar>::value\ 
-			&& std::is_same<typename DERIVED1::Scalar,\ 
-			typename DERIVED2::Scalar>::value,\ 
-			"Scalar types have to be the same and floating point!");\
+		static_assert(std::is_floating_point<typename DERIVED1::Scalar>::value\
+			&& std::is_same<typename DERIVED1::Scalar,\
+			typename DERIVED2::Scalar>::value,\
+			"Scalar types have to be the same and floating point!");
 
 #define KERNEL_COMPUTE_TEMPLATE_END }
 
@@ -47,10 +47,11 @@ namespace MLearn{
 	template < KernelType KT >
 	class Kernel{};
 
+	template <>
 	class Kernel< KernelType::LINEAR >{
 	public:
 		KERNEL_COMPUTE_TEMPLATE_START(x,y)
-			return x.dot(y)
+			return x.dot(y);
 		KERNEL_COMPUTE_TEMPLATE_END
 	};
 }

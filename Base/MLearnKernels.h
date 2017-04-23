@@ -42,7 +42,7 @@ namespace MLearn{
 		ABEL,
 		SOBOLEV_GEN,
 		PALEY_WIENER
-	}
+	};
 
 	template < KernelType KT >
 	class Kernel{};
@@ -52,7 +52,7 @@ namespace MLearn{
 		KERNEL_COMPUTE_TEMPLATE_START(x,y)
 			return x.dot(y)
 		KERNEL_COMPUTE_TEMPLATE_END
-	}
+	};
 }
 
 #endif

@@ -12,7 +12,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 if (COVERALLS)
 	include(Coveralls)
-	file(GLOB_RECURSE SRCS *.cpp)
+	file(GLOB_RECURSE SRCS $ENV{TRAVIS_BUILD_DIR}/*.h)
 	coveralls_turn_on_coverage()
 	coveralls_setup("${SRCS}" ${COVERALLS_UPLOAD})
 endif()

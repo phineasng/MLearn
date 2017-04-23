@@ -42,14 +42,12 @@ before_script:
   - export GCOV="gcov-4.9"
   - export COVERALLS_SERVICE_NAME=travis-ci
   - export COVERALLS_REPO_TOKEN=TpmxcbIzHLa4FhBKuc8y0WQhzFoQMpQVO
+  - export CTEST_OUTPUT_ON_FAILURE=1
   - cmake -DCOVERALLS=ON -DCMAKE_BUILD_TYPE=Debug ..
 
 script:
   - make
-  - make coveralls
-  - make test
-  
-
+  - make coveralls ARGS="-V"
 
 #before we run the build
 notifications: # set notification options

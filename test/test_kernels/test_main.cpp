@@ -9,7 +9,13 @@
 // MLearn
 #include <Core>
 
-TEST_CASE(){	
+// STL includes
+#include <cmath>
+
+// Boost includes
+#include <boost/math/special_functions/bessel.hpp>
+
+TEST_CASE("Kernel testing (MLearnKernels.h)"){	
 	// setup stage
 	typedef double FT;
 	int dim = 2;
@@ -26,6 +32,150 @@ TEST_CASE(){
 		Kernel<KernelType::LINEAR> k_linear;
 		FT actual_result = k_linear.compute(x,y);
 		FT expected_result = x[0]*y[0] + x[1]*y[1];
+		REQUIRE( actual_result == 
+			Approx(expected_result).margin(TEST_FLOAT_TOLERANCE) );
+	}
+
+	SECTION("Testing the polynomial kernel"){
+		typedef Kernel<KernelType::POLYNOMIAL, FT> KERNEL_TYPE;
+		KERNEL_TYPE k_polynomial;
+		uint N = 15;
+		FT r = 0.3;
+		k_polynomial.get<KERNEL_TYPE::N_index>() = N;
+		k_polynomial.get<KERNEL_TYPE::r_index>() = r;
+		FT actual_result = k_polynomial.compute(x,y);
+		FT base = (x[0]*y[0] + x[1]*y[1] + r);
+		FT expected_result = 1;
+		for (uint i = 1; i <= N; ++i){
+			expected_result *= base;
+		}
+		REQUIRE( actual_result == 
+			Approx(expected_result).margin(TEST_FLOAT_TOLERANCE) );
+	}
+
+	SECTION("Testing the RBF kernel"){
+		typedef Kernel<KernelType::RBF, FT> KERNEL_TYPE;
+		KERNEL_TYPE k_rbf;
+		FT sig_sq = 0.7;
+		k_rbf.get<KERNEL_TYPE::sigma_sq_index>() = sig_sq;
+		FT actual_result = k_rbf.compute(x,y);
+		FT l2_dist = (x[0] - y[0])*(x[0] - y[0]) + (x[1] - y[1])*(x[1] - y[1]);
+		FT expected_result = std::exp(-l2_dist)/(2*sig_sq);
+		REQUIRE( actual_result == 
+			Approx(expected_result).margin(TEST_FLOAT_TOLERANCE) );
+	}
+
+	SECTION("Testing the laplacian kernel"){
+		typedef Kernel<KernelType::LAPLACIAN, FT> KERNEL_TYPE;
+		KERNEL_TYPE k_laplacian;
+		FT alpha = 0.05;
+		k_laplacian.get<KERNEL_TYPE::alpha_index>() = alpha;
+		FT actual_result = k_laplacian.compute(x,y);
+		FT l2_dist = std::sqrt((x[0] - y[0])*(x[0] - y[0]) + 
+			(x[1] - y[1])*(x[1] - y[1]));
+		FT expected_result = std::exp(-alpha*l2_dist);
+		REQUIRE( actual_result == 
+			Approx(expected_result).margin(TEST_FLOAT_TOLERANCE) );
+	}
+
+	SECTION("Testing the Abel kernel"){
+		typedef Kernel<KernelType::ABEL, FT> KERNEL_TYPE;
+		KERNEL_TYPE k_abel;
+		FT alpha = 0.07;
+		k_abel.get<KERNEL_TYPE::alpha_index>() = alpha;
+		FT actual_result = k_abel.compute(x,y);
+		FT l1_dist = std::abs(x[0] - y[0]) + std::abs(x[1] - y[1]);
+		FT expected_result = std::exp(-alpha*l1_dist);
+		REQUIRE( actual_result == 
+			Approx(expected_result).margin(TEST_FLOAT_TOLERANCE) );
+	}
+
+	SECTION("Testing the constant kernel"){
+		typedef Kernel<KernelType::CONSTANT, FT> KERNEL_TYPE;
+		KERNEL_TYPE k_constant;
+		FT c = 3.2153;
+		k_constant.get<KERNEL_TYPE::C_index>() = c;
+		FT actual_result = k_constant.compute(x,y);
+		FT expected_result = c;
+		REQUIRE( actual_result == 
+			Approx(expected_result).margin(TEST_FLOAT_TOLERANCE) );
+	}
+
+	SECTION("Testing the min kernel"){
+		typedef Kernel<KernelType::MIN> KERNEL_TYPE;
+		KERNEL_TYPE k_min;
+		FT actual_result = k_min.compute(x,y);
+		FT expected_result = std::min(x[0], x[1]);
+		expected_result = std::min(expected_result, y[0]);
+		expected_result = std::min(expected_result, y[1]);
+		REQUIRE( actual_result == 
+			Approx(expected_result).margin(TEST_FLOAT_TOLERANCE) );
+	}
+
+	SECTION("Testing the white noise kernel"){
+		typedef Kernel<KernelType::WHITE_NOISE, FT> KERNEL_TYPE;
+		KERNEL_TYPE k_noise;
+		FT noise = 0.39;
+		k_noise.get<KERNEL_TYPE::noise_level_index>() = noise;
+		FT actual_result_1 = k_noise.compute(x,y);
+		FT expected_result_1 = 0.0;
+		FT actual_result_2x = k_noise.compute(x,x);
+		FT actual_result_2y = k_noise.compute(y,y);
+		FT expected_result_2 = noise;
+		REQUIRE( actual_result_1 == 
+			Approx(expected_result_1).margin(TEST_FLOAT_TOLERANCE) );
+		REQUIRE( actual_result_2x == 
+			Approx(expected_result_2).margin(TEST_FLOAT_TOLERANCE) );
+		REQUIRE( actual_result_2y == 
+			Approx(expected_result_2).margin(TEST_FLOAT_TOLERANCE) );
+	}
+
+	SECTION("Testing the Matern kernel"){
+		typedef Kernel<KernelType::MATERN, FT, FT> KERNEL_TYPE;
+		KERNEL_TYPE k_matern;
+		FT smooth = 2.0;
+		FT length = 0.4;
+		k_matern.get<KERNEL_TYPE::smoothness_index>() = smooth;
+		k_matern.get<KERNEL_TYPE::length_scale_index>() = length;
+		FT actual_result = k_matern.compute(x,y);
+		FT d = std::sqrt((x[0] - y[0])*(x[0] - y[0]) + 
+			(x[1] - y[1])*(x[1] - y[1]))/length;
+		FT expected_result = boost::math::cyl_bessel_k(int(smooth), d);
+		REQUIRE( actual_result == 
+			Approx(expected_result).margin(TEST_FLOAT_TOLERANCE) );
+	}
+
+	SECTION("Testing the Rational Quadratic kernel"){
+		typedef Kernel<KernelType::RATIONAL_QUADRATIC, FT> KERNEL_TYPE;
+		KERNEL_TYPE k_rq;
+		FT alpha = 0.13;
+		FT length = 0.4;
+		k_rq.get<KERNEL_TYPE::alpha_index>() = alpha;
+		k_rq.get<KERNEL_TYPE::length_squared_index>() = length*length;
+		FT actual_result = k_rq.compute(x,y);
+		FT d = ((x[0] - y[0])*(x[0] - y[0]) + 
+			(x[1] - y[1])*(x[1] - y[1]))*0.5/(alpha*length*length);
+		FT expected_result = (1.0 + d);
+		expected_result = std::pow(expected_result, -alpha);
+		REQUIRE( actual_result == 
+			Approx(expected_result).margin(TEST_FLOAT_TOLERANCE) );
+	}
+
+	SECTION("Testing the periodic kernel"){
+		typedef Kernel<KernelType::PERIODIC, FT> KERNEL_TYPE;
+		KERNEL_TYPE k_rq;
+		FT period = 0.13;
+		FT length = 0.4;
+		k_rq.get<KERNEL_TYPE::period_index>() = period;
+		k_rq.get<KERNEL_TYPE::length_squared_index>() = length*length;
+		FT actual_result = k_rq.compute(x,y);
+		FT d = std::sqrt((x[0] - y[0])*(x[0] - y[0]) + 
+			(x[1] - y[1])*(x[1] - y[1]));
+		d *= M_PI/period;
+		d = std::sin(d);
+		d *= d;
+		d *= -2.0/(length*length);
+		FT expected_result = std::exp(d);
 		REQUIRE( actual_result == 
 			Approx(expected_result).margin(TEST_FLOAT_TOLERANCE) );
 	}

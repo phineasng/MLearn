@@ -18,3 +18,10 @@ mv $TMP_COVERALLS'/coveralls-cmake-master/cmake'/* $TEST_CMAKE'/'
 
 # - Catch (testing framework)
 wget https://github.com/philsquared/Catch/releases/download/v1.9.1/catch.hpp -O $TEST_INCLUDE_PATH'/catch.hpp'
+
+# - Boost (headers)
+export TMP_BOOST=$TMP_DIR/Boost
+mkdir $TMP_BOOST
+wget https://dl.bintray.com/boostorg/release/1.64.0/source/boost_1_64_0.tar.gz -O $TMP_BOOST'/boost.tar.gz'
+tar xvzf $TMP_BOOST'/boost.tar.gz' -C $TMP_DIR
+mv $TMP_DIR'/boost_1_64_0/boost' $TEST_INCLUDE_PATH'/boost'

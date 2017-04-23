@@ -18,5 +18,7 @@ endif()
 
 include_directories(${MLEARN_ROOT_DIR})
 include_directories($ENV{TEST_INCLUDE_PATH})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-add_subdirectory(dummy_test_eigen)
+enable_testing()
+add_subdirectory(test_kernels)

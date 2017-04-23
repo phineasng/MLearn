@@ -1,0 +1,1 @@
+#define TEST_FLOAT_TOLERANCE 1e-10

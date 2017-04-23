@@ -46,6 +46,7 @@ before_script:
 script:
   - make
   - make coveralls
+  - make test
   
 
 

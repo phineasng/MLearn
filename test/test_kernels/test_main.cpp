@@ -179,4 +179,59 @@ TEST_CASE("Kernel testing (MLearnKernels.h)"){
 		REQUIRE( actual_result == 
 			Approx(expected_result).margin(TEST_FLOAT_TOLERANCE) );
 	}
+
+	SECTION("Testing the composite kernels"){
+		typedef Kernel<KernelType::PERIODIC, FT> K1;
+		typedef Kernel<KernelType::MATERN, FT, FT> K2;
+		typedef Kernel<KernelType::LINEAR> K3;
+
+		// setup periodic kernel
+		K1 ref_per_kernel;
+		typedef CompKerIndex<0,K1::period_index> _0PeriodIDX;
+		typedef CompKerIndex<0,K1::length_squared_index> _0LengthIDX;
+		FT _0_period = 0.5;
+		FT _0_length = 1.5;
+		ref_per_kernel.get<K1::period_index>() = _0_period;
+		ref_per_kernel.get<K1::length_squared_index>() = _0_length;
+
+		// setup matern kernel
+		K2 ref_mat_kernel;
+		typedef CompKerIndex<1,K2::smoothness_index> _1AlphaIDX;
+		FT _1_alpha = 1.7;
+		ref_mat_kernel.get<K2::smoothness_index>() = _1_alpha;
+
+		// setup linear kernel
+		K3 ref_lin_kernel;
+
+
+		SECTION("Sum kernel"){
+			typedef Kernel<KernelType::SUM, K1, K2, K3> KERNEL_TYPE;
+			KERNEL_TYPE k_sum;
+			k_sum.get<_0PeriodIDX>() = _0_period;
+			k_sum.get<_0LengthIDX>() = _0_length;
+			k_sum.get<_1AlphaIDX>() = _1_alpha;
+			FT actual_result = k_sum.compute(x, y);
+			FT expected_result = ref_per_kernel.compute(x, y) + 
+								 ref_mat_kernel.compute(x, y) +
+								 ref_lin_kernel.compute(x, y);
+			REQUIRE( actual_result == 
+				Approx(expected_result).margin(TEST_FLOAT_TOLERANCE) );
+
+		}
+
+		SECTION("Product kernel"){
+			typedef Kernel<KernelType::PRODUCT, K1, K2, K3> KERNEL_TYPE;
+			KERNEL_TYPE k_prod;
+			k_prod.get<_0PeriodIDX>() = _0_period;
+			k_prod.get<_0LengthIDX>() = _0_length;
+			k_prod.get<_1AlphaIDX>() = _1_alpha;
+			FT actual_result = k_prod.compute(x, y);
+			FT expected_result = ref_per_kernel.compute(x, y)* 
+								 ref_mat_kernel.compute(x, y)*
+								 ref_lin_kernel.compute(x, y);
+			REQUIRE( actual_result == 
+				Approx(expected_result).margin(TEST_FLOAT_TOLERANCE) );
+
+		}
+	}
 }

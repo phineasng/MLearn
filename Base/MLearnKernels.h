@@ -14,6 +14,7 @@
 // STL includes
 #include <cmath>
 #include <type_traits>
+#include <tuple>
 
 // MLearn includes
 #include "MLearnCommonFuncs.h"
@@ -39,12 +40,12 @@
 
 #define ENABLE_TYPE_CONST_GET(REF_INDEX, TYPE)\
 	template< uint QUERY_INDEX >\
-	const typename std::enable_if< QUERY_INDEX == REF_INDEX, TYPE >::type&\
+	inline const typename std::enable_if< QUERY_INDEX == REF_INDEX, TYPE >::type&\
 		get() const
 
 #define ENABLE_TYPE_GET(REF_INDEX, TYPE)\
 	template< uint QUERY_INDEX >\
-	typename std::enable_if< QUERY_INDEX == REF_INDEX, TYPE >::type& get()
+	inline typename std::enable_if< QUERY_INDEX == REF_INDEX, TYPE >::type& get()
 
 namespace MLearn{
 
@@ -61,7 +62,9 @@ namespace MLearn{
 		WHITE_NOISE,
 		MATERN,
 		RATIONAL_QUADRATIC,
-		PERIODIC
+		PERIODIC,
+		SUM,
+		PRODUCT
 	};
 
 	template < KernelType KT, typename ... OTHER >
@@ -342,7 +345,7 @@ namespace MLearn{
 		KERNEL_COMPUTE_TEMPLATE_END
 	};
 
-		/**
+	/**
 	*	\brief PERIODIC kernel (default: period = 1.0, length_squared = 1.0)
 	*/
 	template < typename FLOAT_TYPE >
@@ -379,6 +382,103 @@ namespace MLearn{
 			v = std::sin(v);
 			return std::exp(-v*v*2.0/length_squared);
 		KERNEL_COMPUTE_TEMPLATE_END
+	};
+
+	/**
+	*	\brief 		This struct is used as template parameter for the get() 
+	*				function of composite kernels.
+	*	\details 	K_IDX is the id of the kernel in the composite kernel.
+	*				P_IDX is the index of the parameter in the K_IDth kernel.
+	*/
+	template <uint K_IDX, uint P_IDX >
+	struct CompKerIndex{
+		static const uint K_ID = K_IDX;
+		static const uint PARAM_ID = P_IDX;
+	};
+
+	/**
+	*	\brief 		Base class for composite kernel
+	*	\details 	This is the base class for all composite kernels.
+	*				E.g. Sum kernel and product kernel.
+	*				The class contains common utilities like the get() function
+	*				and instantiation of the sub-kernels.
+	*/
+	template < typename ...KERNEL_TYPES >
+	class BaseCompositeKernel{
+	protected:
+		BaseCompositeKernel(){}
+		std::tuple<KERNEL_TYPES...> kernels;
+	private:
+		template < uint K_ID, uint P_ID >
+		using RETURN_TYPE = 
+			decltype(std::get<K_ID>(kernels).template get<P_ID>());
+	public:
+		// const getter
+		template < typename CK_IDX >
+		RETURN_TYPE<CK_IDX::K_ID, CK_IDX::PARAM_ID> get() const{
+			return std::get<CK_IDX::K_ID>(kernels).get<CK_IDX::PARAM_ID>();
+		}
+		// getter/setter
+		template < typename CK_IDX >
+		RETURN_TYPE<CK_IDX::K_ID, CK_IDX::PARAM_ID> get(){
+			return std::get<CK_IDX::K_ID>(kernels).get<CK_IDX::PARAM_ID>();
+		}
+	};
+
+	/**
+	*	\brief Sum kernel
+	*/
+	template<typename ...KERNEL_TYPES>
+	class Kernel<KernelType::SUM, KERNEL_TYPES...>: 
+		public BaseCompositeKernel<KERNEL_TYPES...>{
+	private:
+		typedef BaseCompositeKernel<KERNEL_TYPES...> Base; 
+		template <uint N, typename DERIVED1, typename DERIVED2>
+		inline typename std::enable_if< N != 0, typename DERIVED1::Scalar>::type
+				sum(const DERIVED1& x, const DERIVED2& y, 
+				const typename DERIVED1::Scalar& cum_sum){
+			return sum<N-1>
+				(x, y, cum_sum + std::get<N-1>(Base::kernels).compute(x, y));
+		} 
+		template <uint N, typename DERIVED1, typename DERIVED2>
+		inline typename std::enable_if< N == 0, typename DERIVED1::Scalar>::type
+				sum(const DERIVED1& x, const DERIVED2& y, 
+				const typename DERIVED1::Scalar& cum_sum){
+			return cum_sum;
+		}
+	public:
+		KERNEL_COMPUTE_TEMPLATE_START(x,y){
+			typedef typename DERIVED1::Scalar FLOAT_TYPE;
+			return sum<sizeof...(KERNEL_TYPES)>(x, y, 0.);
+		}KERNEL_COMPUTE_TEMPLATE_END
+	};
+
+	/**
+	*	\brief Product kernel
+	*/
+	template<typename ...KERNEL_TYPES>
+	class Kernel<KernelType::PRODUCT, KERNEL_TYPES...>: 
+		public BaseCompositeKernel<KERNEL_TYPES...>{
+	private:
+		typedef BaseCompositeKernel<KERNEL_TYPES...> Base; 
+		template <uint N, typename DERIVED1, typename DERIVED2>
+		inline typename std::enable_if< N != 0, typename DERIVED1::Scalar>::type
+				prod(const DERIVED1& x, const DERIVED2& y, 
+				const typename DERIVED1::Scalar& cum_prod){
+			return prod<N-1>
+				(x, y, cum_prod*std::get<N-1>(Base::kernels).compute(x, y));
+		} 
+		template <uint N, typename DERIVED1, typename DERIVED2>
+		inline typename std::enable_if< N == 0, typename DERIVED1::Scalar>::type
+				prod(const DERIVED1& x, const DERIVED2& y, 
+				const typename DERIVED1::Scalar& cum_prod){
+			return cum_prod;
+		}
+	public:
+		KERNEL_COMPUTE_TEMPLATE_START(x,y){
+			typedef typename DERIVED1::Scalar FLOAT_TYPE;
+			return prod<sizeof...(KERNEL_TYPES)>(x, y, 1.);
+		}KERNEL_COMPUTE_TEMPLATE_END
 	};
 
 

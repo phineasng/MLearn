@@ -40,12 +40,14 @@
 
 #define ENABLE_TYPE_CONST_GET(REF_INDEX, TYPE)\
 	template< uint QUERY_INDEX >\
-	inline const typename std::enable_if< QUERY_INDEX == REF_INDEX, TYPE >::type&\
+	inline const typename\
+		std::enable_if< QUERY_INDEX == REF_INDEX, TYPE >::type&\
 		get() const
 
 #define ENABLE_TYPE_GET(REF_INDEX, TYPE)\
 	template< uint QUERY_INDEX >\
-	inline typename std::enable_if< QUERY_INDEX == REF_INDEX, TYPE >::type& get()
+	inline typename\
+		std::enable_if< QUERY_INDEX == REF_INDEX, TYPE >::type& get()
 
 namespace MLearn{
 

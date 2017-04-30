@@ -450,7 +450,6 @@ namespace MLearn{
 		}
 	public:
 		KERNEL_COMPUTE_TEMPLATE_START(x,y){
-			typedef typename DERIVED1::Scalar FLOAT_TYPE;
 			return sum<sizeof...(KERNEL_TYPES)>(x, y, 0.);
 		}KERNEL_COMPUTE_TEMPLATE_END
 	};
@@ -478,7 +477,6 @@ namespace MLearn{
 		}
 	public:
 		KERNEL_COMPUTE_TEMPLATE_START(x,y){
-			typedef typename DERIVED1::Scalar FLOAT_TYPE;
 			return prod<sizeof...(KERNEL_TYPES)>(x, y, 1.);
 		}KERNEL_COMPUTE_TEMPLATE_END
 	};

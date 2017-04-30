@@ -7,7 +7,7 @@
 #include <test_common.h>
 
 // MLearn
-#include <Core>
+#include <MLearn/Core>
 
 // STL includes
 #include <cmath>

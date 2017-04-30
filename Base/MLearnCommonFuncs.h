@@ -44,20 +44,20 @@ namespace MLearn{
 	}
 
 	// exponentiation by squaring
-	template < typename BaseType, typename ExpType >
-	inline BaseType ml_pow(const BaseType& base, const ExpType& exp){
-		static_assert(std::is_integral<ExpType>::value, 
+	template < typename BaseType >
+	inline BaseType ml_pow(const BaseType& base, const int& exp){
+		static_assert(std::is_integral<int>::value, 
 			"Only integer values are supported as exponents. Sorry!");
 		if ( (exp <= 10) && (exp >= -10) ){ // constants to be optimised 
 			BaseType res = 1;
-			for (ExpType i = 1; i <= exp; ++i){
+			for (int i = 1; i <= exp; ++i){
 				res *= base;
 			}
 			return res;
 		}else{ // exponentiation by squaring
 			BaseType value = base;
 			BaseType result = 1;
-			ExpType exponent = exp;
+			int exponent = exp;
 			if (exponent < 0){
 				exponent = -exponent;
 				value = BaseType(1)/base;

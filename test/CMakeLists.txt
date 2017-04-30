@@ -8,7 +8,7 @@ set(MLEARN_ROOT_DIR "..")
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${MLEARN_ROOT_DIR}/cmake)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} $ENV{TEST_CMAKE})
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
 
 if (COVERALLS)
 	include(Coveralls)
@@ -19,9 +19,10 @@ if (COVERALLS)
 	coveralls_setup("${SRCS}" ${COVERALLS_UPLOAD})
 endif()
 
-include_directories(${MLEARN_ROOT_DIR})
+include_directories("${MLEARN_ROOT_DIR}/../")
 include_directories($ENV{TEST_INCLUDE_PATH})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 enable_testing()
 add_subdirectory(test_kernels)
+add_subdirectory(test_sampling)

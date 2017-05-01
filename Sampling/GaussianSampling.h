@@ -320,7 +320,7 @@ public:
 		_mean = mg._mean;
 		_covariance = mg._covariance;
 		_transform = mg._transform;
-		return *this;
+		return (*this);
 	}
 	/*!
 		\brief Move assignment
@@ -330,7 +330,7 @@ public:
 		_mean = std::move(mg._mean);
 		_covariance = std::move(mg._covariance);
 		_transform = std::move(mg._transform);
-		return *this;
+		return (*this);
 	}
 	/*!
 		\brief Destructor
@@ -412,7 +412,27 @@ public:
 		\brief Get transform
 	*/
 	const MLMatrix<Scalar>& transform() const {return _transform;}
-
+	/*!
+		\brief Set mean
+	*/
+	void set_mean(const Eigen::Ref<const MLVector<Scalar>>& mean){
+		MLEARN_ASSERT(mean.size() == _mean.size(),
+			"Wrong input mean size! Use set_distribution instead if you want to change size!");
+		_mean = mean;
+	}
+	/*!
+		\brief Set covariance
+	*/
+	template <bool ADAPTIVE = true, 
+			  TransformMethod TM = TransformMethod::CHOL>
+	void set_covariance(const Eigen::Ref<const MLMatrix<Scalar>>& covariance){
+		MLEARN_ASSERT(covariance.cols() == _covariance.cols(),
+			"Wrong input size! Use set_distribution instead if you want to change size!");
+		MLEARN_ASSERT(covariance.rows() == _covariance.rows(),
+			"Wrong input size! Use set_distribution instead if you want to change size!");
+		_covariance = covariance;
+		this->_compute_linear_transform<ADAPTIVE, TM>(_covariance, _transform);
+	}
 };
 
 }}}

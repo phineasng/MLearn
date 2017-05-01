@@ -4,6 +4,8 @@
 // Eigen includes
 #include <Eigen/Core>
 #include <Eigen/Cholesky>
+#include <Eigen/SVD>
+#include <Eigen/Eigenvalues>
 
 // MLearn includes
 #include <MLearn/Core>
@@ -15,6 +17,7 @@
 // STL includes
 #include <type_traits>
 #include <chrono>
+#include <functional>
 
 namespace MLearn{
 namespace Sampling{
@@ -33,8 +36,8 @@ namespace Gaussian{
 	enum class TransformMethod{
 		/** using Cholesky factorization */
 		CHOL, 
-		/** using Robust Cholesky factorization */
-		CHOL_ROBUST
+		/** using SV decomposition */
+		EIGENSOLVER
 	};
 
 namespace SamplingImpl{
@@ -64,11 +67,11 @@ namespace SamplingImpl{
 		using STYPE = Eigen::LLT< MLMatrix<Scalar> >;
 	};
 
-	// Robust Cholesky specialization
+	// EIGENSOLVER specialization
 	template<>
-	struct SolverTraits<TransformMethod::CHOL_ROBUST>{
+	struct SolverTraits<TransformMethod::EIGENSOLVER>{
 		template < typename Scalar >
-		using STYPE = Eigen::LDLT< MLMatrix<Scalar> >;
+		using STYPE = Eigen::SelfAdjointEigenSolver< MLMatrix<Scalar> >;
 	};
 
 	/*!
@@ -96,18 +99,22 @@ namespace SamplingImpl{
 	*			 (as provided by the eigen library)
 	*			 compute the necessary transformation
 	*	\param 	 transform transformation to be computed
-	*	\param 	 solver LDLT solver
+	*	\param 	 solver SelfAdjointEigenSolver solver
 	*/
 	template < typename DERIVED1, typename DERIVED2 >
 	inline void transform_from_decomposition(
 				Eigen::MatrixBase<DERIVED1>& transform,
-				const Eigen::LDLT<DERIVED2>& solver)
+				const Eigen::SelfAdjointEigenSolver<DERIVED2>& solver)
 	{
 		MLEARN_WARNING(solver.info() == Eigen::Success,
 			"Decomposition inaccurate!");
-		transform = solver.matrixL();
-		transform = solver.transpositionsP().transpose()*
-					transform*solver.vectorD().cwiseSqrt().asDiagonal();
+		typedef typename DERIVED1::Scalar Scalar;
+		transform.fill(0);
+		transform.diagonal() = 
+			solver.eigenvalues().unaryExpr(
+				std::function<Scalar(Scalar)>(round_to_zero<Scalar>)).cwiseSqrt();
+		std::cout << transform.diagonal() << std::endl;
+		transform = solver.eigenvectors()*transform;
 	}
 
 	/*!
@@ -261,9 +268,14 @@ private:
 		if (cholesky.info() == Eigen::Success){
 			SamplingImpl::transform_from_decomposition(transform, cholesky);
 		}else{
-			Eigen::LDLT< MLMatrix<Scalar> > cholesky_robust(covar);
-			SamplingImpl::transform_from_decomposition(transform, 
-				cholesky_robust);
+			Eigen::JacobiSVD< MLMatrix<Scalar> > svd(covar, Eigen::ComputeThinU | Eigen::ComputeThinV);
+			std::cout << svd.singularValues() << std::endl; 
+			std::cout << svd.matrixU() << std::endl; 
+			std::cout << std::endl;
+			std::cout << svd.matrixV() << std::endl; 
+			Eigen::SelfAdjointEigenSolver< MLMatrix<Scalar> > eigen(covar);
+			std::cout << eigen.eigenvalues() << std::endl; 
+			SamplingImpl::transform_from_decomposition(transform, eigen);
 		}
 	}
 	template <bool ADAPTIVE, TransformMethod TM>
@@ -417,7 +429,8 @@ public:
 	*/
 	void set_mean(const Eigen::Ref<const MLVector<Scalar>>& mean){
 		MLEARN_ASSERT(mean.size() == _mean.size(),
-			"Wrong input mean size! Use set_distribution instead if you want to change size!");
+			"Wrong input mean size! Use set_distribution instead if you want to"
+			" change size!");
 		_mean = mean;
 	}
 	/*!
@@ -427,9 +440,11 @@ public:
 			  TransformMethod TM = TransformMethod::CHOL>
 	void set_covariance(const Eigen::Ref<const MLMatrix<Scalar>>& covariance){
 		MLEARN_ASSERT(covariance.cols() == _covariance.cols(),
-			"Wrong input size! Use set_distribution instead if you want to change size!");
+			"Wrong input size! Use set_distribution instead if you want to "
+			"change size!");
 		MLEARN_ASSERT(covariance.rows() == _covariance.rows(),
-			"Wrong input size! Use set_distribution instead if you want to change size!");
+			"Wrong input size! Use set_distribution instead if you want to "
+			"change size!");
 		_covariance = covariance;
 		this->_compute_linear_transform<ADAPTIVE, TM>(_covariance, _transform);
 	}

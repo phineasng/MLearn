@@ -26,7 +26,8 @@
 #define KERNEL_COMPUTE_TEMPLATE_START(x,y)\
 	template < typename DERIVED1, typename DERIVED2 >\
 	typename DERIVED1::Scalar compute(const Eigen::MatrixBase<DERIVED1>& x,\
-									  const Eigen::MatrixBase<DERIVED2>& y){\
+									  const Eigen::MatrixBase<DERIVED2>& y) const\
+	{\
 		static_assert(DERIVED1::ColsAtCompileTime == 1,\
 			"First input has to be a column vector(or compatible structure)");\
 		static_assert(DERIVED2::ColsAtCompileTime == 1,\
@@ -438,14 +439,14 @@ namespace MLearn{
 		template <uint N, typename DERIVED1, typename DERIVED2>
 		inline typename std::enable_if< N != 0, typename DERIVED1::Scalar>::type
 				sum(const DERIVED1& x, const DERIVED2& y, 
-				const typename DERIVED1::Scalar& cum_sum){
+				const typename DERIVED1::Scalar& cum_sum) const{
 			return sum<N-1>
 				(x, y, cum_sum + std::get<N-1>(Base::kernels).compute(x, y));
 		} 
 		template <uint N, typename DERIVED1, typename DERIVED2>
 		inline typename std::enable_if< N == 0, typename DERIVED1::Scalar>::type
 				sum(const DERIVED1& x, const DERIVED2& y, 
-				const typename DERIVED1::Scalar& cum_sum){
+				const typename DERIVED1::Scalar& cum_sum) const{
 			return cum_sum;
 		}
 	public:
@@ -465,14 +466,14 @@ namespace MLearn{
 		template <uint N, typename DERIVED1, typename DERIVED2>
 		inline typename std::enable_if< N != 0, typename DERIVED1::Scalar>::type
 				prod(const DERIVED1& x, const DERIVED2& y, 
-				const typename DERIVED1::Scalar& cum_prod){
+				const typename DERIVED1::Scalar& cum_prod) const{
 			return prod<N-1>
 				(x, y, cum_prod*std::get<N-1>(Base::kernels).compute(x, y));
 		} 
 		template <uint N, typename DERIVED1, typename DERIVED2>
 		inline typename std::enable_if< N == 0, typename DERIVED1::Scalar>::type
 				prod(const DERIVED1& x, const DERIVED2& y, 
-				const typename DERIVED1::Scalar& cum_prod){
+				const typename DERIVED1::Scalar& cum_prod) const{
 			return cum_prod;
 		}
 	public:

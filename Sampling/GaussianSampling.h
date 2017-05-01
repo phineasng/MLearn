@@ -113,7 +113,6 @@ namespace SamplingImpl{
 		transform.diagonal() = 
 			solver.eigenvalues().unaryExpr(
 				std::function<Scalar(Scalar)>(round_to_zero<Scalar>)).cwiseSqrt();
-		std::cout << transform.diagonal() << std::endl;
 		transform = solver.eigenvectors()*transform;
 	}
 
@@ -268,13 +267,7 @@ private:
 		if (cholesky.info() == Eigen::Success){
 			SamplingImpl::transform_from_decomposition(transform, cholesky);
 		}else{
-			Eigen::JacobiSVD< MLMatrix<Scalar> > svd(covar, Eigen::ComputeThinU | Eigen::ComputeThinV);
-			std::cout << svd.singularValues() << std::endl; 
-			std::cout << svd.matrixU() << std::endl; 
-			std::cout << std::endl;
-			std::cout << svd.matrixV() << std::endl; 
 			Eigen::SelfAdjointEigenSolver< MLMatrix<Scalar> > eigen(covar);
-			std::cout << eigen.eigenvalues() << std::endl; 
 			SamplingImpl::transform_from_decomposition(transform, eigen);
 		}
 	}

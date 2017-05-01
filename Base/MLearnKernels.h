@@ -21,6 +21,9 @@
 
 // Boost includes
 #include <boost/math/special_functions/bessel.hpp>
+#include <boost/math/special_functions/pow.hpp>
+#include <boost/math/special_functions/gamma.hpp>
+
 
 // Useful macros
 #define KERNEL_COMPUTE_TEMPLATE_START(x,y)\
@@ -62,10 +65,10 @@ namespace MLearn{
 		ABEL,
 		CONSTANT, 
 		MIN,
-		WHITE_NOISE,
-		MATERN,
+		MATERN32,
 		RATIONAL_QUADRATIC,
 		PERIODIC,
+		WHITE_NOISE,
 		SUM,
 		PRODUCT
 	};
@@ -140,8 +143,8 @@ namespace MLearn{
 			static_assert(std::is_same<typename DERIVED1::Scalar,
 				FLOAT_TYPE>::value, "Scalar types must be the same!");
 			MLEARN_ASSERT(sigma_sq > 0., "Sigma squared has to be positive!");
-			FLOAT_TYPE l2_dist_squared = (x - y).squaredNorm();
-			return std::exp(-l2_dist_squared)*0.5/sigma_sq;
+			FLOAT_TYPE l2_dist_squared = (x - y).squaredNorm()*0.5/sigma_sq;
+			return std::exp(-l2_dist_squared);
 		KERNEL_COMPUTE_TEMPLATE_END
 	};
 
@@ -232,7 +235,8 @@ namespace MLearn{
 	public:
 		// compute function
 		KERNEL_COMPUTE_TEMPLATE_START(x,y)
-			return std::min(x.minCoeff(), y.minCoeff());
+			return 0.5*(x.template lpNorm<1>() - 
+				(x-y).template lpNorm<1>() + y.template lpNorm<1>());
 		KERNEL_COMPUTE_TEMPLATE_END
 	};
 
@@ -273,22 +277,14 @@ namespace MLearn{
 	/**
 	*	\brief Matern kernel (default: smoothness = 2.5, length = 1.0)
 	*/
-	template < typename SMOOTH_TYPE, typename LENGTH_TYPE >
-	class Kernel< KernelType::MATERN, SMOOTH_TYPE, LENGTH_TYPE >{
+	template < typename LENGTH_TYPE >
+	class Kernel< KernelType::MATERN32, LENGTH_TYPE >{
 	private:
-		SMOOTH_TYPE smoothness = SMOOTH_TYPE(2.5); // nu
 		LENGTH_TYPE length_scale = LENGTH_TYPE(1.0);
 	public:
 		// Indeces to retrieve and get/set hyperparameters
-		static const uint smoothness_index = 0;
-		static const uint length_scale_index = 1;
+		static const uint length_scale_index = 0;
 		// hyperparams getter/setter
-		ENABLE_TYPE_CONST_GET(smoothness_index, SMOOTH_TYPE){
-			return smoothness;
-		}
-		ENABLE_TYPE_GET(smoothness_index, SMOOTH_TYPE){
-			return smoothness;
-		}
 		ENABLE_TYPE_CONST_GET(length_scale_index, LENGTH_TYPE){
 			return length_scale;
 		}
@@ -303,9 +299,8 @@ namespace MLearn{
 				"Smoothness parameter has to be positive!");
 			MLEARN_ASSERT(length_scale > 0, 
 				"Smoothness parameter has to be positive!");
-			LENGTH_TYPE d = (x - y).norm()/length_scale;
-			using namespace boost::math;
-			return cyl_bessel_k(smoothness, d);
+			LENGTH_TYPE d = (x - y).norm()*SQRT_3/length_scale;
+			return (1 + d)*std::exp(-d);
 		KERNEL_COMPUTE_TEMPLATE_END
 	};
 
@@ -315,7 +310,7 @@ namespace MLearn{
 	template < typename FLOAT_TYPE >
 	class Kernel< KernelType::RATIONAL_QUADRATIC, FLOAT_TYPE >{
 	private:
-		FLOAT_TYPE alpha = FLOAT_TYPE(1.0); 
+		FLOAT_TYPE alpha = FLOAT_TYPE(0.1); 
 		FLOAT_TYPE length_squared = FLOAT_TYPE(1.0);
 	public:
 		// Indeces to retrieve and get/set hyperparameters

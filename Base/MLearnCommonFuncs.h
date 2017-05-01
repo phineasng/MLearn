@@ -13,6 +13,10 @@
 #include <cmath>
 #include <type_traits>
 
+#ifndef SQRT_3
+#define SQRT_3 1.732050807568877293527446341505
+#endif
+
 namespace MLearn{
 
 	// 0-1 sign function
@@ -76,6 +80,14 @@ namespace MLearn{
 			}
 			return value*result;
 		}
+	}
+
+	template <typename Scalar>
+	inline Scalar round_to_zero(const Scalar& value){
+		if (std::abs(value) < 1e-10){
+			return Scalar(0);
+		}
+		return value;
 	}
 
 } // End MLearn namespace

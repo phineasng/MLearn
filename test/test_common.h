@@ -1,3 +1,6 @@
+#ifndef TEST_COMMON_H_FILE_MLEARN
+#define TEST_COMMON_H_FILE_MLEARN
+
 #define TEST_FLOAT_TOLERANCE 1e-10
 
 // MLearn includes
@@ -17,3 +20,5 @@ namespace TestUtils{
 		return (m1 - m2).template lpNorm<Eigen::Infinity>();
 	}
 }
+
+#endif

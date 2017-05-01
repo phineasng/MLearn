@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.0.2)
+project(MLearnSamplingDemo)
+
+add_executable(MultivariateSamplingDemo multivariate_gaussian.cpp)
+target_link_libraries(MultivariateSamplingDemo boost_system)
+target_link_libraries(MultivariateSamplingDemo boost_iostreams)

@@ -202,6 +202,18 @@ TEST_CASE("Multivariate gaussian class test"){
 		REQUIRE(TestUtils::diff_norm(covariance, move_assign_mg.covariance()) == 
 			Approx(0).margin(TEST_FLOAT_TOLERANCE));
 
+		MLVector<FT> new_mean = MLVector<FT>::Random(dim);
+		MLMatrix<FT> new_covariance = 5.0*covariance;
+
+		ref_mg.set_mean(new_mean);
+		REQUIRE(TestUtils::diff_norm(new_mean, ref_mg.mean()) == 
+			Approx(0).margin(TEST_FLOAT_TOLERANCE));
+		ref_mg.set_covariance(new_covariance);
+		REQUIRE(TestUtils::diff_norm(new_covariance, ref_mg.covariance()) == 
+			Approx(0).margin(TEST_FLOAT_TOLERANCE));
+		REQUIRE(TestUtils::diff_norm(new_covariance, 
+						ref_mg.transform()*ref_mg.transform().transpose()) == 
+			Approx(0).margin(TEST_FLOAT_TOLERANCE));
 	}
 
 }

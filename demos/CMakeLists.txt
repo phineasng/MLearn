@@ -14,3 +14,4 @@ include_directories(../${MLEARN_ROOT_DIR})
 link_directories(${Boost_LIBRARY_DIRS})
 
 add_subdirectory(demo_sampling)
+add_subdirectory(demo_gaussian_process)

@@ -7,6 +7,7 @@
 
 // Eigen includes
 #include <Eigen/Core>
+#include <Eigen/SVD>
 
 // Boost includes
 #include <boost/math/special_functions/erf.hpp>
@@ -54,7 +55,8 @@ class GaussianProcess{
 private:
 	/*! underlying gaussian sampler*/
 	Sampling::Gaussian::MultivariateGaussian<Scalar> _sampler;
-	static constexpr Scalar _sqrt_2 = Scalar(1.41421356237309504880168872420969807856967187537694807317667973799);
+	static constexpr Scalar _sqrt_2 = 
+	Scalar(1.41421356237309504880168872420969807856967187537694807317667973799);
 	/*!
 		\brief Compute covariance given query points and kernel. 
 			   Basically a wrapper function around compute_gp_covariance.
@@ -134,6 +136,14 @@ public:
 	*/
 	void set_covariance(const Eigen::Ref<const MLMatrix<Scalar>>& covariance){
 		_sampler.set_covariance(covariance);
+	}
+	/*!
+		\brief Set distribution
+	*/
+	void set_distribution(
+			const Eigen::Ref<const MLVector<Scalar>>& mean,
+			const Eigen::Ref<const MLMatrix<Scalar>>& covariance){
+		_sampler.set_distribution(mean, covariance);
 	}
 	/*!
 		\brief Set covariance given query points and kernel

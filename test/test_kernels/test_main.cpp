@@ -139,6 +139,19 @@ TEST_CASE("Kernel testing (MLearnKernels.h)"){
 			Approx(expected_result).margin(TEST_FLOAT_TOLERANCE) );
 	}
 
+	SECTION("Testing the Matern52 kernel"){
+		typedef Kernel<KernelType::MATERN52, FT> KERNEL_TYPE;
+		KERNEL_TYPE k_matern;
+		FT length = 0.7;
+		k_matern.get<KERNEL_TYPE::length_scale_index>() = length;
+		FT actual_result = k_matern.compute(x,y);
+		FT d = std::sqrt((x[0] - y[0])*(x[0] - y[0]) + 
+			(x[1] - y[1])*(x[1] - y[1]))*SQRT_5/length;
+		FT expected_result = (1.0 + d + d*d*INV_3)*std::exp(-d);
+		REQUIRE( actual_result == 
+			Approx(expected_result).margin(TEST_FLOAT_TOLERANCE) );
+	}
+
 	SECTION("Testing the Rational Quadratic kernel"){
 		typedef Kernel<KernelType::RATIONAL_QUADRATIC, FT> KERNEL_TYPE;
 		KERNEL_TYPE k_rq;

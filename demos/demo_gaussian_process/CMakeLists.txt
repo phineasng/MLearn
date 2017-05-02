@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.0.2)
+project(MLearnGPDemo)
+
+add_executable(GPSamplingDemo gaussian_process_sampling.cpp)
+target_link_libraries(GPSamplingDemo boost_system)
+target_link_libraries(GPSamplingDemo boost_iostreams)
+target_link_libraries(GPSamplingDemo boost_program_options)

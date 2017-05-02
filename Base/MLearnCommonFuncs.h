@@ -13,9 +13,7 @@
 #include <cmath>
 #include <type_traits>
 
-#ifndef SQRT_3
-#define SQRT_3 1.732050807568877293527446341505
-#endif
+#include "MLearnMacros.h"
 
 namespace MLearn{
 
@@ -84,7 +82,7 @@ namespace MLearn{
 
 	template <typename Scalar>
 	inline Scalar round_to_zero(const Scalar& value){
-		if (std::abs(value) < 1e-10){
+		if (std::abs(value) < LOW_ZERO_TOLERANCE){
 			return Scalar(0);
 		}
 		return value;

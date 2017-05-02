@@ -17,6 +17,26 @@
 #define __func__ __FUNCTION__
 #endif
 
+#ifndef LOW_ZERO_TOLERANCE
+#define LOW_ZERO_TOLERANCE 1e-8
+#endif
+
+
+#ifndef SQRT_2
+#define SQRT_2 1.41421356237309504880168872420969807
+#endif
+
+#ifndef SQRT_3
+#define SQRT_3 1.732050807568877293527446341505
+#endif
+
+#ifndef SQRT_5
+#define SQRT_5 2.2360679774997896964091736
+#endif
+
+#ifndef INV_3
+#define INV_3 0.33333333333333333333333333
+#endif
 
 // DEBUG MACROS
 #ifndef NDEBUG

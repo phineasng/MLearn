@@ -13,6 +13,7 @@
 // Eigen 
 #include <Eigen/Core>
 #include <Eigen/Cholesky>
+#include <Eigen/Eigenvalues>
 #include <Eigen/LU>
 
 // Boost includes
@@ -51,15 +52,15 @@ TEST_CASE("Test utility functions for multivariate gaussian sampling."){
 				Approx(0).margin(TEST_FLOAT_TOLERANCE));
 		}
 
-		SECTION("Test using robust cholesky!"){
-			LDLT<MLMatrix<FT>> rob_cholesky(A);
+		SECTION("Test using eigensolver!"){
+			SelfAdjointEigenSolver<MLMatrix<FT>> eigensolver(A);
 			transform = MLMatrix<FT>::Random(dim, dim);
 			
 			REQUIRE_FALSE( 
 				TestUtils::diff_norm(transform*transform.transpose(), A) ==
 				Approx(0).margin(TEST_FLOAT_TOLERANCE));
 
-			transform_from_decomposition(transform, rob_cholesky);
+			transform_from_decomposition(transform, eigensolver);
 			
 			REQUIRE( 
 				TestUtils::diff_norm(transform*transform.transpose(), A) ==

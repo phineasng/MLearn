@@ -12,9 +12,6 @@
 // STL includes
 #include <cmath>
 
-// Boost includes
-#include <boost/math/special_functions/bessel.hpp>
-
 TEST_CASE("Kernel testing (MLearnKernels.h)"){	
 	// setup stage
 	typedef double FT;
@@ -60,7 +57,7 @@ TEST_CASE("Kernel testing (MLearnKernels.h)"){
 		k_rbf.get<KERNEL_TYPE::sigma_sq_index>() = sig_sq;
 		FT actual_result = k_rbf.compute(x,y);
 		FT l2_dist = (x[0] - y[0])*(x[0] - y[0]) + (x[1] - y[1])*(x[1] - y[1]);
-		FT expected_result = std::exp(-l2_dist)/(2*sig_sq);
+		FT expected_result = std::exp(-l2_dist/(2*sig_sq));
 		REQUIRE( actual_result == 
 			Approx(expected_result).margin(TEST_FLOAT_TOLERANCE) );
 	}
@@ -105,9 +102,8 @@ TEST_CASE("Kernel testing (MLearnKernels.h)"){
 		typedef Kernel<KernelType::MIN> KERNEL_TYPE;
 		KERNEL_TYPE k_min;
 		FT actual_result = k_min.compute(x,y);
-		FT expected_result = std::min(x[0], x[1]);
-		expected_result = std::min(expected_result, y[0]);
-		expected_result = std::min(expected_result, y[1]);
+		FT expected_result = 0.5*(x.template lpNorm<1>() - 
+				(x-y).template lpNorm<1>() + y.template lpNorm<1>());
 		REQUIRE( actual_result == 
 			Approx(expected_result).margin(TEST_FLOAT_TOLERANCE) );
 	}
@@ -130,17 +126,15 @@ TEST_CASE("Kernel testing (MLearnKernels.h)"){
 			Approx(expected_result_2).margin(TEST_FLOAT_TOLERANCE) );
 	}
 
-	SECTION("Testing the Matern kernel"){
-		typedef Kernel<KernelType::MATERN, FT, FT> KERNEL_TYPE;
+	SECTION("Testing the Matern32 kernel"){
+		typedef Kernel<KernelType::MATERN32, FT> KERNEL_TYPE;
 		KERNEL_TYPE k_matern;
-		FT smooth = 2.0;
 		FT length = 0.4;
-		k_matern.get<KERNEL_TYPE::smoothness_index>() = smooth;
 		k_matern.get<KERNEL_TYPE::length_scale_index>() = length;
 		FT actual_result = k_matern.compute(x,y);
 		FT d = std::sqrt((x[0] - y[0])*(x[0] - y[0]) + 
-			(x[1] - y[1])*(x[1] - y[1]))/length;
-		FT expected_result = boost::math::cyl_bessel_k(int(smooth), d);
+			(x[1] - y[1])*(x[1] - y[1]))*SQRT_3/length;
+		FT expected_result = (1.0 + d)*std::exp(-d);
 		REQUIRE( actual_result == 
 			Approx(expected_result).margin(TEST_FLOAT_TOLERANCE) );
 	}
@@ -182,7 +176,7 @@ TEST_CASE("Kernel testing (MLearnKernels.h)"){
 
 	SECTION("Testing the composite kernels"){
 		typedef Kernel<KernelType::PERIODIC, FT> K1;
-		typedef Kernel<KernelType::MATERN, FT, FT> K2;
+		typedef Kernel<KernelType::MATERN32, FT> K2;
 		typedef Kernel<KernelType::LINEAR> K3;
 
 		// setup periodic kernel
@@ -196,9 +190,9 @@ TEST_CASE("Kernel testing (MLearnKernels.h)"){
 
 		// setup matern kernel
 		K2 ref_mat_kernel;
-		typedef CompKerIndex<1,K2::smoothness_index> _1AlphaIDX;
+		typedef CompKerIndex<1,K2::length_scale_index> _1AlphaIDX;
 		FT _1_alpha = 1.7;
-		ref_mat_kernel.get<K2::smoothness_index>() = _1_alpha;
+		ref_mat_kernel.get<K2::length_scale_index>() = _1_alpha;
 
 		// setup linear kernel
 		K3 ref_lin_kernel;

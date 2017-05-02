@@ -295,8 +295,6 @@ namespace MLearn{
 		KERNEL_COMPUTE_TEMPLATE_START(x,y)
 			static_assert(std::is_same<typename DERIVED1::Scalar,
 				LENGTH_TYPE>::value, "Scalar types must be the same!");
-			MLEARN_ASSERT(smoothness > 0, 
-				"Smoothness parameter has to be positive!");
 			MLEARN_ASSERT(length_scale > 0, 
 				"Smoothness parameter has to be positive!");
 			LENGTH_TYPE d = (x - y).norm()*SQRT_3/length_scale;

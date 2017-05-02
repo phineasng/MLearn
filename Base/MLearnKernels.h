@@ -66,6 +66,7 @@ namespace MLearn{
 		CONSTANT, 
 		MIN,
 		MATERN32,
+		MATERN52,
 		RATIONAL_QUADRATIC,
 		PERIODIC,
 		WHITE_NOISE,
@@ -117,7 +118,7 @@ namespace MLearn{
 			static_assert(std::is_same<typename DERIVED1::Scalar,
 				FLOAT_TYPE>::value, "Scalar types must be the same!");
 			FLOAT_TYPE base = x.dot(y) + r;
-			return ml_pow(base, N);
+			return std::pow(base, N);
 		KERNEL_COMPUTE_TEMPLATE_END
 	};
 
@@ -275,7 +276,7 @@ namespace MLearn{
 	};
 
 	/**
-	*	\brief Matern kernel (default: smoothness = 2.5, length = 1.0)
+	*	\brief Matern kernel (default: length = 1.0)
 	*/
 	template < typename LENGTH_TYPE >
 	class Kernel< KernelType::MATERN32, LENGTH_TYPE >{
@@ -299,6 +300,34 @@ namespace MLearn{
 				"Smoothness parameter has to be positive!");
 			LENGTH_TYPE d = (x - y).norm()*SQRT_3/length_scale;
 			return (1 + d)*std::exp(-d);
+		KERNEL_COMPUTE_TEMPLATE_END
+	};
+
+	/**
+	*	\brief Matern kernel (default: length = 1.0)
+	*/
+	template < typename LENGTH_TYPE >
+	class Kernel< KernelType::MATERN52, LENGTH_TYPE >{
+	private:
+		LENGTH_TYPE length_scale = LENGTH_TYPE(1.0);
+	public:
+		// Indeces to retrieve and get/set hyperparameters
+		static const uint length_scale_index = 0;
+		// hyperparams getter/setter
+		ENABLE_TYPE_CONST_GET(length_scale_index, LENGTH_TYPE){
+			return length_scale;
+		}
+		ENABLE_TYPE_GET(length_scale_index, LENGTH_TYPE){
+			return length_scale;
+		}
+		// compute function
+		KERNEL_COMPUTE_TEMPLATE_START(x,y)
+			static_assert(std::is_same<typename DERIVED1::Scalar,
+				LENGTH_TYPE>::value, "Scalar types must be the same!");
+			MLEARN_ASSERT(length_scale > 0, 
+				"Smoothness parameter has to be positive!");
+			LENGTH_TYPE d = (x - y).norm()*SQRT_5/length_scale;
+			return (1 + d + d*d*INV_3)*std::exp(-d);
 		KERNEL_COMPUTE_TEMPLATE_END
 	};
 

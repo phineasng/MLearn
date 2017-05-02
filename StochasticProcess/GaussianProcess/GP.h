@@ -55,8 +55,6 @@ class GaussianProcess{
 private:
 	/*! underlying gaussian sampler*/
 	Sampling::Gaussian::MultivariateGaussian<Scalar> _sampler;
-	static constexpr Scalar _sqrt_2 = 
-	Scalar(1.41421356237309504880168872420969807856967187537694807317667973799);
 	/*!
 		\brief Compute covariance given query points and kernel. 
 			   Basically a wrapper function around compute_gp_covariance.
@@ -184,7 +182,7 @@ public:
 	MLMatrix<Scalar> confidence_interval(const Scalar& p){
 		MLMatrix<Scalar> intervals(2, _sampler.mean().rows());
 		intervals.row(1) = _sampler.covariance().diagonal().cwiseSqrt();
-		intervals.row(1) *= _sqrt_2*boost::math::erf_inv(p);
+		intervals.row(1) *= SQRT_2*boost::math::erf_inv(p);
 		intervals.row(0) = -intervals.row(1);
 		intervals.rowwise() += _sampler.mean().transpose();
 		return intervals;

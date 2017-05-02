@@ -13,6 +13,7 @@ env:
     - COMPILER='ccache g++-4.9'
     - TMP_DIR='/tmp'
     - TEST_INCLUDE_PATH=$TRAVIS_BUILD_DIR/test_includes
+    - TEST_SRC_PATH=$TRAVIS_BUILD_DIR/test
     - TEST_CMAKE=$TRAVIS_BUILD_DIR/test_cmake
 os: linux
 dist: trusty
@@ -39,15 +40,15 @@ before_script:
   - mkdir ./test/test_build
   - cd ./test/test_build
   - export CXX="g++-4.9"
+  - export GCOV="gcov-4.9"
   - export COVERALLS_SERVICE_NAME=travis-ci
   - export COVERALLS_REPO_TOKEN=TpmxcbIzHLa4FhBKuc8y0WQhzFoQMpQVO
+  - export CTEST_OUTPUT_ON_FAILURE=1
   - cmake -DCOVERALLS=ON -DCMAKE_BUILD_TYPE=Debug ..
 
 script:
   - make
-  - make coveralls
-  
-
+  - make coveralls ARGS="-V"
 
 #before we run the build
 notifications: # set notification options

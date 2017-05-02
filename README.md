@@ -12,7 +12,8 @@ Due to a recently developed interest in deep learning, the library may reveal a 
 
 ## Dependencies
 * c++11 ( library tested using g++-4.9.2 )
-* Eigen >= 3.2.7
+* Eigen == 3.3.3
+* Boost == 1.64.0 (headers-only)
 
 ### Dependencies for the examples
 * openCV

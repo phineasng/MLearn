@@ -4,7 +4,7 @@ This demo will plot a gaussian process with a user-specified kernel.
 
 ## Setup 
 
-Be sure to run the [setup]() steps.
+Be sure to run the [setup](https://github.com/phineasng/MLearn/tree/master/demos) steps.
 Compile specifically this demo from the build directory with `make GPSamplingDemo`
 
 ## How to run the demo

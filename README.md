@@ -19,9 +19,9 @@ This template library is a personal project to refresh and deepen my knowledge o
 * Boost == 1.64.0 (headers-only)
 
 ## Demos
-- [Demo]() 
+- [Demo](https://github.com/phineasng/MLearn/tree/master/demos) 
   - A bash script is provided to setup eveything necessary to run the demos.
-- [Examples]() 
+- [Examples](https://github.com/phineasng/MLearn/tree/master/src/examples) 
   - Mostly boilerplate code. While I am providing a cmake file for each examples, 
   they might be cumbersome to run due to lack of documentation, not provided data, etc...
   Contact me in case you want to run those examples and you encounter some problems. 

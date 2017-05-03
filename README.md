@@ -20,7 +20,7 @@ This template library is a personal project to refresh and deepen my knowledge o
 
 ## Demos
 - [Demo]() 
-  -A bash script is provided to setup eveything necessary to run the demos.
+  - A bash script is provided to setup eveything necessary to run the demos.
 - [Examples]() 
   - Mostly boilerplate code. While I am providing a cmake file for each examples, 
   they might be cumbersome to run due to lack of documentation, not provided data, etc...

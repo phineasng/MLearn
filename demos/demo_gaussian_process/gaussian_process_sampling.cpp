@@ -35,7 +35,7 @@ int main(int argc, char** argv){
 
 	desc.add_options()
 		("help", "Show the help")
-		("kernel", po::value<int>(), "Value in [0, 10)." 
+		("kernel", po::value<int>(), "Value in [0, 10]." 
 		"This value indicates which kernel will be used. Available kernels:\n"
 		"LINEAR (0)\n"
 		"POLYNOMIAL (1)\n"

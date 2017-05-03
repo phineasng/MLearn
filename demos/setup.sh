@@ -65,9 +65,9 @@ function print_help(){
     echo "  --all                : download and setup both boost and eigen."
     echo "  --eigen_path         : root directory where to find eigen (where "
     echo "                         your Eigen/ folder is stored)."
-    echo "  --boost_path         : root directory where to find eigen (where you"
-    echo "						   installed headers and libraries using the "
-    echo "						   install scripts provided by the boost library)."
+    echo "  --boost_path         : root directory where to find boost (where you"
+    echo "                         installed headers and libraries using the "
+    echo "                         install scripts provided by the boost library)."
     echo "  -h                   : print this help."
 
     exit ${EXIT_CODE}

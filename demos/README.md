@@ -13,9 +13,12 @@ Further dependencies for the demo (the script will always try to install these):
 
 To setup the correct dependencies, you just need to run the `setup.sh`
 from this folder, i.e. `/path/to/MLearn/demos`. 
-If the options are correctly set, the script should perform these steps:
+If the options are correctly set, the script should _automatically_ perform these steps:
 1. Create a build directory
 2. Download/setup dependencies
+  - If you don't have the necessary dependencies (or you're not sure), you can specify the flags `--eigen`, `--boost` or `--all` to require the installation of respectively the Eigen library, Boost or both.
+  - If either Eigen or Boost are already installed, you should specify respectively `--eigen_path` (the folder containing the `Eigen/` folder) or `--boost_path` (the folder you specified when installing boost with the `--prefix` flag - usually this defaults to `/usr/local/`)
+  - `gnuplot` and `gnuplot-iostream` will be installed in _any_ case (super user rights are required for `gnuplot`). 
 3. Run cmake
 
 The script can be provided with these options:

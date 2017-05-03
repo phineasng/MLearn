@@ -11,7 +11,7 @@ This template library is a personal project to refresh and deepen my knowledge o
   3. K-means (untested)
 - Optimization
   1. SGD and variants (untested)
-  2. BFGS
+  2. BFGS (untested)
 
 ## Dependencies
 * c++11 ( g++-4.9.2 )

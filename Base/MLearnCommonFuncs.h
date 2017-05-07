@@ -14,6 +14,10 @@
 #include <type_traits>
 
 #include "MLearnMacros.h"
+#include "MLearnTypes.h"
+
+#include <Eigen/Core>
+#include <Eigen/SVD>
 
 namespace MLearn{
 
@@ -86,6 +90,24 @@ namespace MLearn{
 			return Scalar(0);
 		}
 		return value;
+	}
+
+	template <typename DERIVED>
+	inline MLMatrix<typename DERIVED::Scalar> pseudoinverse(
+			const Eigen::MatrixBase<DERIVED>& M){
+		Eigen::JacobiSVD<MLMatrix<typename DERIVED::Scalar>> 
+			svd(M, Eigen::ComputeThinU | Eigen::ComputeThinV);
+		typedef typename DERIVED::Scalar Scalar;
+		auto CwiseInverseOp = [](const Scalar& v){
+			if (std::abs(v) < LOW_ZERO_TOLERANCE){
+				return Scalar(0.);
+			}else{
+				return Scalar(1.0)/v;
+			}
+		};
+		return svd.matrixV()*
+			   (svd.singularValues().unaryExpr(CwiseInverseOp).asDiagonal())*
+			   svd.matrixU().transpose();
 	}
 
 } // End MLearn namespace

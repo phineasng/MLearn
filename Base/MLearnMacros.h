@@ -18,7 +18,7 @@
 #endif
 
 #ifndef LOW_ZERO_TOLERANCE
-#define LOW_ZERO_TOLERANCE 1e-8
+#define LOW_ZERO_TOLERANCE 1e-7
 #endif
 
 

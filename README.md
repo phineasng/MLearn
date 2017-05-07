@@ -27,6 +27,8 @@ This template library is a personal project to refresh and deepen my knowledge o
   Contact me in case you want to run those examples and you encounter some problems. 
 
 ## Snapshots from experiments
+* Gaussian Process regression. Image from this [demo](https://github.com/phineasng/MLearn/tree/master/demos/demo_regression)
+![](https://github.com/phineasng/MLearn/blob/master/demos/demo_regression/img/gp_regression.png)
 * Filters learned by a Bernoulli-Bernoulli RBM on the MNIST dataset (19 epochs)
 ![](https://github.com/phineasng/MLearn/blob/master/misc/imgs/BernoulliBernoulliRBM_19epochs.png)
 

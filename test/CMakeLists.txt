@@ -24,6 +24,8 @@ include_directories($ENV{TEST_INCLUDE_PATH})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 enable_testing()
+add_subdirectory(test_base)
 add_subdirectory(test_kernels)
 add_subdirectory(test_sampling)
+add_subdirectory(test_regression)
 add_subdirectory(test_stochastic_process)

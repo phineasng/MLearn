@@ -18,3 +18,4 @@ with the `--noise` flag.
 ./GPSamplingDemo --help
 --noise arg           Noise variance (default: 0.0).
 ```
+![](https://github.com/phineasng/MLearn/blob/master/demos/demo_regression/img/gp_regression.png)

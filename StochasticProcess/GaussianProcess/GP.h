@@ -17,8 +17,8 @@ namespace SP{
 namespace GP{
 
 /*!
-	\brief Given query covariance and a kernel, compute the covariance 
-		   matrix.
+	\brief Given query, covariance (to be overwritten) and a kernel, 
+		   compute the covariance matrix.
     \tparam KERNEL Type of the kernel that exposes a compute() function
 */
 template< typename KERNEL, typename DERIVED1, typename DERIVED2 >
@@ -36,6 +36,31 @@ static inline void compute_gp_covariance(
 			covariance(i,j) = 
 				kernel.compute(query_pts.col(i), query_pts.col(j));
 			covariance(j,i) = covariance(i,j);
+		}
+	}
+}
+
+/*!
+	\brief Given two sets of query points, covariance and a kernel, 
+		   compute the covariance matrix.
+    \tparam KERNEL Type of the kernel that exposes a compute() function
+*/
+template< typename KERNEL, typename DERIVED1, 
+		  typename DERIVED2, typename DERIVED3 >
+static inline void compute_gp_covariance(
+		const Eigen::MatrixBase<DERIVED1>& query_pts_1,
+		const Eigen::MatrixBase<DERIVED2>& query_pts_2,
+		const KERNEL& kernel,
+		Eigen::MatrixBase<DERIVED3>& covariance){
+	MLEARN_ASSERT(query_pts_1.cols() == covariance.rows(),
+		"Covariance size must be the same as the number of query points!");
+	MLEARN_ASSERT(query_pts_2.cols() == covariance.cols(),
+		"Covariance size must be the same as the number of query points!");
+
+	for (int j = 0; j < covariance.cols(); ++j){
+		for (int i = 0; i < covariance.rows(); ++i){
+			covariance(i,j) = 
+				kernel.compute(query_pts_1.col(i), query_pts_2.col(j));
 		}
 	}
 }
@@ -156,7 +181,7 @@ public:
 	/*!
 		\brief Sample function
 	*/
-	MLMatrix<Scalar> sample(int N = 10){
+	MLMatrix<Scalar> sample(int N = 10) const{
 		return _sampler.sample(N);
 	}
 	/*!
@@ -179,7 +204,7 @@ public:
 		\return a 2xN matrix containing the confidence intervals. First row is 
 				lower bound, second row is upper bound
 	*/
-	MLMatrix<Scalar> confidence_interval(const Scalar& p){
+	MLMatrix<Scalar> confidence_interval(const Scalar& p) const{
 		MLMatrix<Scalar> intervals(2, _sampler.mean().rows());
 		intervals.row(1) = _sampler.covariance().diagonal().cwiseSqrt();
 		intervals.row(1) *= SQRT_2*boost::math::erf_inv(p);

@@ -25,21 +25,44 @@ TEST_CASE("Test computation of covariance matrix"){
 	uint dim = 10;
 
 	MLMatrix<FT> pts = MLMatrix<FT>::Random(dim, N);
-	MLMatrix<FT> covariance = MLMatrix<FT>::Zero(N, N);
+	MLMatrix<FT> other_pts = MLMatrix<FT>::Random(dim, 2*N);
 
 	SECTION("Test expected result with mock kernel"){
+		MLMatrix<FT> covariance = MLMatrix<FT>::Zero(N, N);
 		MockKernel K;
 
 		compute_gp_covariance(pts, K, covariance);
 
 		REQUIRE(diff_norm(pts.transpose()*pts, covariance) == 
 			Approx(0).margin(TEST_FLOAT_TOLERANCE));
-
 	}
 	
 	SECTION("Test compilation with a real kernel"){
+		MLMatrix<FT> covariance = MLMatrix<FT>::Zero(N, N);
 		Kernel< KernelType::LINEAR > K;
 		compute_gp_covariance(pts, K, covariance);
+	}
+
+	SECTION("Test expected result with mock kernel and two set of points"){
+		MockKernel K;
+		MLMatrix<FT> covariance = MLMatrix<FT>::Zero(N, 2*N);
+
+		compute_gp_covariance(pts, other_pts, K, covariance);
+
+		REQUIRE(diff_norm(pts.transpose()*other_pts, covariance) == 
+			Approx(0).margin(TEST_FLOAT_TOLERANCE));
+	}
+
+	SECTION("Test consistent results"){
+		MockKernel K;
+		MLMatrix<FT> covariance_1 = MLMatrix<FT>::Zero(N, N);
+		MLMatrix<FT> covariance_2 = MLMatrix<FT>::Zero(N, N);
+
+		compute_gp_covariance(pts, K, covariance_1);
+		compute_gp_covariance(pts, pts, K, covariance_2);
+
+		REQUIRE(diff_norm(covariance_1, covariance_2) == 
+			Approx(0).margin(TEST_FLOAT_TOLERANCE));
 	}
 }
 

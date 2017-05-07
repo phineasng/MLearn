@@ -378,7 +378,7 @@ public:
 		\brief Instantiated version of sampling
 		\param N number of samples to produce (default: 100)
 	*/
-	MLMatrix<Scalar> sample(int N = 100){
+	MLMatrix<Scalar> sample(int N = 100) const{
 		MLMatrix<Scalar> samples = 
 			sample_standard_gaussian<Scalar>(_mean.rows(), N);
 		SamplingImpl::transform_gaussian_samples_with_transform(

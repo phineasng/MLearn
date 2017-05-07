@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.0.2)
+project(MLearnRegressionDemo)
+
+add_executable(GPRegressionDemo gp_regression.cpp)
+target_link_libraries(GPRegressionDemo boost_system)
+target_link_libraries(GPRegressionDemo boost_iostreams)
+target_link_libraries(GPRegressionDemo boost_program_options)

@@ -49,4 +49,4 @@ to be built, e.g. `make MultivariateSamplingDemo`.
 Here I will try to maintain a list of available demos:
 1. [Multivariate Gaussian sampling](https://github.com/phineasng/MLearn/tree/master/demos/demo_sampling)
 2. [Gaussian Processes sampling](https://github.com/phineasng/MLearn/tree/master/demos/demo_gaussian_process)
-3. [Gaussian process regression](https://github.com/phineasng/MLearn/tree/master/demos/demo_regression)
+3. [Gaussian Process Regression](https://github.com/phineasng/MLearn/tree/master/demos/demo_regression)

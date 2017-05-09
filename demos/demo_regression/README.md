@@ -1,4 +1,4 @@
-# Gaussian Processes demo
+# Gaussian Process Regression demo
 
 This demo will perform regression using gaussian process. The function to be fitted
 is `x*sin(x) + exp(-x^2)`.
@@ -15,7 +15,7 @@ This demo can be run from the correct subfolder with the command
 with the `--noise` flag.
 
 ```bash
-./GPSamplingDemo --help
+./GPRegressionDemo --help
 --noise arg           Noise variance (default: 0.0).
 ```
 ![](https://github.com/phineasng/MLearn/blob/master/demos/demo_regression/img/gp_regression.png)

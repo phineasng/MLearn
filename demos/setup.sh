@@ -36,7 +36,7 @@ function setup_boost(){
 	cd ${DEPENDENCIES_DIR}/boost_1_64_0/
 	./bootstrap.sh --prefix=${DEPENDENCIES_DIR} -with-libraries=filesystem,system,iostreams,program_options
 	./b2
-	./b2 install
+	./b2 install &> out.log
 	rm -rf ${DEPENDENCIES_DIR}/boost_1_64_0
 	export BOOST_ROOT=${DEPENDENCIES_DIR}
 	cd ${DEMO_ROOT}
@@ -45,7 +45,7 @@ function setup_boost(){
 function setup_plplot(){
 	# Download 
 	echo -e "\e[1m\e[33mInstalling gnuplot.\e[0m"
-	sudo apt-get install gnuplot
+	apt-get install gnuplot
 	echo -e "\e[1m\e[33mDownloading and setting up PLPLOT.\e[0m"
 	wget https://github.com/dstahlke/gnuplot-iostream/archive/master.zip -O ${DEPENDENCIES_DIR}/gnuplot++.zip --quiet
 	unzip -o -qq ${DEPENDENCIES_DIR}/gnuplot++.zip -d ${DEPENDENCIES_DIR}

@@ -1,5 +1,5 @@
 language: cpp
-sudo: false
+sudo: required
 cache:
   ccache: true
   directories:
@@ -48,7 +48,7 @@ before_script:
   - cmake -DCOVERALLS=ON -DCMAKE_BUILD_TYPE=Debug ..
 #build demos
   - cd $TRAVIS_BUILD_DIR/demos
-  - bash ./setup.sh --all 
+  - sudo bash ./setup.sh --all 
 
 script:
   - cd $TRAVIS_BUILD_DIR/test/test_build

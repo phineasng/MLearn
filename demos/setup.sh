@@ -45,7 +45,7 @@ function setup_boost(){
 function setup_plplot(){
 	# Download 
 	echo -e "\e[1m\e[33mInstalling gnuplot.\e[0m"
-	apt-get install gnuplot
+	sudo apt-get install gnuplot
 	echo -e "\e[1m\e[33mDownloading and setting up PLPLOT.\e[0m"
 	wget https://github.com/dstahlke/gnuplot-iostream/archive/master.zip -O ${DEPENDENCIES_DIR}/gnuplot++.zip --quiet
 	unzip -o -qq ${DEPENDENCIES_DIR}/gnuplot++.zip -d ${DEPENDENCIES_DIR}

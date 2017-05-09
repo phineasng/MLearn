@@ -35,11 +35,12 @@ The script can be provided with these options:
   -h                   : print this help.
 
 ```
-*NOTE*: you may have to run the script with super user rights
+*NOTE*: the scripts will try to install gnuplot with `sudo` so you will probably 
+have to input your password. 
 
 For example, to install all the dependencies from a clean build directory:
 ```bash
-sudo bash setup.sh --clean --all
+bash setup.sh --clean --all
 ```
 
 Now you can `cd` into the build folder `demo_build`. If you run the `make`

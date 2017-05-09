@@ -42,16 +42,17 @@
 
 #define KERNEL_COMPUTE_TEMPLATE_END }
 
-#define ENABLE_TYPE_CONST_GET(REF_INDEX, TYPE)\
+#define GETTER_SIGNATURE(REF_INDEX, TYPE)\
 	template< uint QUERY_INDEX >\
 	inline const typename\
 		std::enable_if< QUERY_INDEX == REF_INDEX, TYPE >::type&\
 		get() const
 
-#define ENABLE_TYPE_GET(REF_INDEX, TYPE)\
+#define SETTER_SIGNATURE(REF_INDEX, TYPE)\
 	template< uint QUERY_INDEX >\
 	inline typename\
-		std::enable_if< QUERY_INDEX == REF_INDEX, TYPE >::type& get()
+		std::enable_if< QUERY_INDEX == REF_INDEX, void >::type\
+			set(const TYPE& value)
 
 namespace MLearn{
 
@@ -101,17 +102,17 @@ namespace MLearn{
 		static const uint N_index = 0;
 		static const uint r_index = 1; 
 		// hyperparams getter/setter
-		ENABLE_TYPE_CONST_GET(N_index, uint){
+		GETTER_SIGNATURE(N_index, uint){
 			return N;
 		}
-		ENABLE_TYPE_GET(N_index, uint){
-			return N;
+		SETTER_SIGNATURE(N_index, uint){
+			N = value;
 		}
-		ENABLE_TYPE_CONST_GET(r_index, FLOAT_TYPE){
+		GETTER_SIGNATURE(r_index, FLOAT_TYPE){
 			return r;
 		}
-		ENABLE_TYPE_GET(r_index, FLOAT_TYPE){
-			return r;
+		SETTER_SIGNATURE(r_index, FLOAT_TYPE){
+			r = value;
 		}
 		// compute function
 		KERNEL_COMPUTE_TEMPLATE_START(x,y)
@@ -129,22 +130,24 @@ namespace MLearn{
 	class Kernel< KernelType::RBF, FLOAT_TYPE >{
 	private:
 		FLOAT_TYPE sigma_sq = FLOAT_TYPE(1.0); // "variance"
+		FLOAT_TYPE inv_sigma_half = FLOAT_TYPE(0.5);
 	public:
 		// Indeces to retrieve and get/set hyperparameters
 		static const uint sigma_sq_index = 0;
 		// hyperparams getter/setter
-		ENABLE_TYPE_CONST_GET(sigma_sq_index, FLOAT_TYPE){
+		GETTER_SIGNATURE(sigma_sq_index, FLOAT_TYPE){
 			return sigma_sq;
 		}
-		ENABLE_TYPE_GET(sigma_sq_index, FLOAT_TYPE){
-			return sigma_sq;
+		SETTER_SIGNATURE(sigma_sq_index, FLOAT_TYPE){
+			sigma_sq = value;
+			MLEARN_ASSERT(sigma_sq > 0., "Sigma squared has to be positive!");
+			inv_sigma_half = FLOAT_TYPE(0.5)/sigma_sq;
 		}
 		// compute function
 		KERNEL_COMPUTE_TEMPLATE_START(x,y)
 			static_assert(std::is_same<typename DERIVED1::Scalar,
 				FLOAT_TYPE>::value, "Scalar types must be the same!");
-			MLEARN_ASSERT(sigma_sq > 0., "Sigma squared has to be positive!");
-			FLOAT_TYPE l2_dist_squared = (x - y).squaredNorm()*0.5/sigma_sq;
+			FLOAT_TYPE l2_dist_squared = (x - y).squaredNorm()*inv_sigma_half;
 			return std::exp(-l2_dist_squared);
 		KERNEL_COMPUTE_TEMPLATE_END
 	};
@@ -160,17 +163,17 @@ namespace MLearn{
 		// Indeces to retrieve and get/set hyperparameters
 		static const uint alpha_index = 0;
 		// hyperparams getter/setter
-		ENABLE_TYPE_CONST_GET(alpha_index, FLOAT_TYPE){
+		GETTER_SIGNATURE(alpha_index, FLOAT_TYPE){
 			return alpha;
 		}
-		ENABLE_TYPE_GET(alpha_index, FLOAT_TYPE){
-			return alpha;
+		SETTER_SIGNATURE(alpha_index, FLOAT_TYPE){
+			alpha = value;
+			MLEARN_ASSERT(alpha > 0., "Sigma squared has to be positive!");
 		}
 		// compute function
 		KERNEL_COMPUTE_TEMPLATE_START(x,y)
 			static_assert(std::is_same<typename DERIVED1::Scalar,
 				FLOAT_TYPE>::value, "Scalar types must be the same!");
-			MLEARN_ASSERT(alpha > 0., "Sigma squared has to be positive!");
 			FLOAT_TYPE l2_dist = (x - y).norm();
 			return std::exp(-alpha*l2_dist);
 		KERNEL_COMPUTE_TEMPLATE_END
@@ -187,17 +190,17 @@ namespace MLearn{
 		// Indeces to retrieve and get/set hyperparameters
 		static const uint alpha_index = 0;
 		// hyperparams getter/setter
-		ENABLE_TYPE_CONST_GET(alpha_index, FLOAT_TYPE){
+		GETTER_SIGNATURE(alpha_index, FLOAT_TYPE){
 			return alpha;
 		}
-		ENABLE_TYPE_GET(alpha_index, FLOAT_TYPE){
-			return alpha;
+		SETTER_SIGNATURE(alpha_index, FLOAT_TYPE){
+			alpha = value;
+			MLEARN_ASSERT(alpha > 0., "Sigma squared has to be positive!");
 		}
 		// compute function
 		KERNEL_COMPUTE_TEMPLATE_START(x,y)
 			static_assert(std::is_same<typename DERIVED1::Scalar,
 				FLOAT_TYPE>::value, "Scalar types must be the same!");
-			MLEARN_ASSERT(alpha > 0., "Sigma squared has to be positive!");
 			FLOAT_TYPE l1_dist = (x - y).template lpNorm<1>();
 			return std::exp(-alpha*l1_dist);
 		KERNEL_COMPUTE_TEMPLATE_END
@@ -214,11 +217,11 @@ namespace MLearn{
 		// Indeces to retrieve and get/set hyperparameters
 		static const uint C_index = 0;
 		// hyperparams getter/setter
-		ENABLE_TYPE_CONST_GET(C_index, FLOAT_TYPE){
+		GETTER_SIGNATURE(C_index, FLOAT_TYPE){
 			return C;
 		}
-		ENABLE_TYPE_GET(C_index, FLOAT_TYPE){
-			return C;
+		SETTER_SIGNATURE(C_index, FLOAT_TYPE){
+			C = value;
 		}
 		// compute function
 		KERNEL_COMPUTE_TEMPLATE_START(x,y)
@@ -252,11 +255,11 @@ namespace MLearn{
 		// Indeces to retrieve and get/set hyperparameters
 		static const uint noise_level_index = 0;
 		// hyperparams getter/setter
-		ENABLE_TYPE_CONST_GET(noise_level_index, FLOAT_TYPE){
+		GETTER_SIGNATURE(noise_level_index, FLOAT_TYPE){
 			return noise_level;
 		}
-		ENABLE_TYPE_GET(noise_level_index, FLOAT_TYPE){
-			return noise_level;
+		SETTER_SIGNATURE(noise_level_index, FLOAT_TYPE){
+			noise_level = value;
 		}
 		// compute function
 		// adding these curly brackets just because the sublime syntax checker
@@ -282,23 +285,25 @@ namespace MLearn{
 	class Kernel< KernelType::MATERN32, LENGTH_TYPE >{
 	private:
 		LENGTH_TYPE length_scale = LENGTH_TYPE(1.0);
+		LENGTH_TYPE _sqrt3_inv_length = SQRT_3;
 	public:
 		// Indeces to retrieve and get/set hyperparameters
 		static const uint length_scale_index = 0;
 		// hyperparams getter/setter
-		ENABLE_TYPE_CONST_GET(length_scale_index, LENGTH_TYPE){
+		GETTER_SIGNATURE(length_scale_index, LENGTH_TYPE){
 			return length_scale;
 		}
-		ENABLE_TYPE_GET(length_scale_index, LENGTH_TYPE){
-			return length_scale;
+		SETTER_SIGNATURE(length_scale_index, LENGTH_TYPE){
+			length_scale = value;
+			MLEARN_ASSERT(length_scale > 0, 
+				"Smoothness parameter has to be positive!");
+			_sqrt3_inv_length = SQRT_3/length_scale;
 		}
 		// compute function
 		KERNEL_COMPUTE_TEMPLATE_START(x,y)
 			static_assert(std::is_same<typename DERIVED1::Scalar,
 				LENGTH_TYPE>::value, "Scalar types must be the same!");
-			MLEARN_ASSERT(length_scale > 0, 
-				"Smoothness parameter has to be positive!");
-			LENGTH_TYPE d = (x - y).norm()*SQRT_3/length_scale;
+			LENGTH_TYPE d = (x - y).norm()*_sqrt3_inv_length;
 			return (1 + d)*std::exp(-d);
 		KERNEL_COMPUTE_TEMPLATE_END
 	};
@@ -310,15 +315,17 @@ namespace MLearn{
 	class Kernel< KernelType::MATERN52, LENGTH_TYPE >{
 	private:
 		LENGTH_TYPE length_scale = LENGTH_TYPE(1.0);
+		LENGTH_TYPE _sqrt5_inv_length = SQRT_5;
 	public:
 		// Indeces to retrieve and get/set hyperparameters
 		static const uint length_scale_index = 0;
 		// hyperparams getter/setter
-		ENABLE_TYPE_CONST_GET(length_scale_index, LENGTH_TYPE){
+		GETTER_SIGNATURE(length_scale_index, LENGTH_TYPE){
 			return length_scale;
 		}
-		ENABLE_TYPE_GET(length_scale_index, LENGTH_TYPE){
-			return length_scale;
+		SETTER_SIGNATURE(length_scale_index, LENGTH_TYPE){
+			length_scale = value;
+			_sqrt5_inv_length = SQRT_5/length_scale;
 		}
 		// compute function
 		KERNEL_COMPUTE_TEMPLATE_START(x,y)
@@ -326,7 +333,7 @@ namespace MLearn{
 				LENGTH_TYPE>::value, "Scalar types must be the same!");
 			MLEARN_ASSERT(length_scale > 0, 
 				"Smoothness parameter has to be positive!");
-			LENGTH_TYPE d = (x - y).norm()*SQRT_5/length_scale;
+			LENGTH_TYPE d = (x - y).norm()*_sqrt5_inv_length;
 			return (1 + d + d*d*INV_3)*std::exp(-d);
 		KERNEL_COMPUTE_TEMPLATE_END
 	};
@@ -339,22 +346,26 @@ namespace MLearn{
 	private:
 		FLOAT_TYPE alpha = FLOAT_TYPE(0.1); 
 		FLOAT_TYPE length_squared = FLOAT_TYPE(1.0);
+		FLOAT_TYPE inv_alpha_len_half = FLOAT_TYPE(5.0);
 	public:
 		// Indeces to retrieve and get/set hyperparameters
 		static const uint alpha_index = 0;
 		static const uint length_squared_index = 1;
 		// hyperparams getter/setter
-		ENABLE_TYPE_CONST_GET(alpha_index, FLOAT_TYPE){
+		GETTER_SIGNATURE(alpha_index, FLOAT_TYPE){
 			return alpha;
 		}
-		ENABLE_TYPE_GET(alpha_index, FLOAT_TYPE){
-			return alpha;
+		SETTER_SIGNATURE(alpha_index, FLOAT_TYPE){
+			alpha = value;
 		}
-		ENABLE_TYPE_CONST_GET(length_squared_index, FLOAT_TYPE){
+		GETTER_SIGNATURE(length_squared_index, FLOAT_TYPE){
 			return length_squared;
 		}
-		ENABLE_TYPE_GET(length_squared_index, FLOAT_TYPE){
-			return length_squared;
+		SETTER_SIGNATURE(length_squared_index, FLOAT_TYPE){
+			length_squared = value;
+			MLEARN_ASSERT(length_squared > 0, 
+				"Smoothness parameter has to be positive!");
+			inv_alpha_len_half = 0.5/(alpha*length_squared);
 		}
 		// compute function
 		KERNEL_COMPUTE_TEMPLATE_START(x,y)
@@ -362,9 +373,7 @@ namespace MLearn{
 				FLOAT_TYPE>::value, "Scalar types must be the same!");
 			MLEARN_ASSERT(alpha > 0, 
 				"Smoothness parameter has to be positive!");
-			MLEARN_ASSERT(length_squared > 0, 
-				"Smoothness parameter has to be positive!");
-			FLOAT_TYPE d = (x - y).squaredNorm()*0.5/(alpha*length_squared);
+			FLOAT_TYPE d = (x - y).squaredNorm()*inv_alpha_len_half;
 			FLOAT_TYPE base = (1.0 + d);
 			return std::pow(base, -alpha);
 		KERNEL_COMPUTE_TEMPLATE_END
@@ -378,34 +387,38 @@ namespace MLearn{
 	private:
 		FLOAT_TYPE period = FLOAT_TYPE(1.0); 
 		FLOAT_TYPE length_squared = FLOAT_TYPE(1.0);
+		FLOAT_TYPE _inv_period = M_PI;
+		FLOAT_TYPE _inv_length = FLOAT_TYPE(2.0);
 	public:
 		// Indeces to retrieve and get/set hyperparameters
 		static const uint period_index = 0;
 		static const uint length_squared_index = 1;
 		// hyperparams getter/setter
-		ENABLE_TYPE_CONST_GET(period_index, FLOAT_TYPE){
+		GETTER_SIGNATURE(period_index, FLOAT_TYPE){
 			return period;
 		}
-		ENABLE_TYPE_GET(period_index, FLOAT_TYPE){
-			return period;
+		SETTER_SIGNATURE(period_index, FLOAT_TYPE){
+			period = value;
+			MLEARN_ASSERT(period > 0, 
+				"Smoothness parameter has to be positive!");
+			_inv_period = M_PI/period;
 		}
-		ENABLE_TYPE_CONST_GET(length_squared_index, FLOAT_TYPE){
+		GETTER_SIGNATURE(length_squared_index, FLOAT_TYPE){
 			return length_squared;
 		}
-		ENABLE_TYPE_GET(length_squared_index, FLOAT_TYPE){
-			return length_squared;
+		SETTER_SIGNATURE(length_squared_index, FLOAT_TYPE){
+			length_squared = value;
+			MLEARN_ASSERT(length_squared > 0, 
+				"Smoothness parameter has to be positive!");
+			_inv_length = 2.0/length_squared;
 		}
 		// compute function
 		KERNEL_COMPUTE_TEMPLATE_START(x,y)
 			static_assert(std::is_same<typename DERIVED1::Scalar,
 				FLOAT_TYPE>::value, "Scalar types must be the same!");
-			MLEARN_ASSERT(period > 0, 
-				"Smoothness parameter has to be positive!");
-			MLEARN_ASSERT(length_squared > 0, 
-				"Smoothness parameter has to be positive!");
-			FLOAT_TYPE v = (x - y).norm()*M_PI/period;
+			FLOAT_TYPE v = (x - y).norm()*_inv_period;
 			v = std::sin(v);
-			return std::exp(-v*v*2.0/length_squared);
+			return std::exp(-v*v*_inv_length);
 		KERNEL_COMPUTE_TEMPLATE_END
 	};
 
@@ -445,8 +458,8 @@ namespace MLearn{
 		}
 		// getter/setter
 		template < typename CK_IDX >
-		RETURN_TYPE<CK_IDX::K_ID, CK_IDX::PARAM_ID> get(){
-			return std::get<CK_IDX::K_ID>(kernels).get<CK_IDX::PARAM_ID>();
+		void set(RETURN_TYPE<CK_IDX::K_ID, CK_IDX::PARAM_ID> value){
+			return std::get<CK_IDX::K_ID>(kernels).set<CK_IDX::PARAM_ID>(value);
 		}
 	};
 

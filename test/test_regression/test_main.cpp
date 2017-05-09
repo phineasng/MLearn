@@ -101,8 +101,8 @@ TEST_CASE("Gaussian Process Regressor"){
 		uint N_kernel = 3;
 		FT r_kernel = 0.1;
 
-		kernel.get<KPOL::N_index>() = N_kernel;
-		kernel.get<KPOL::r_index>() = r_kernel;
+		kernel.set<KPOL::N_index>(N_kernel);
+		kernel.set<KPOL::r_index>(r_kernel);
 
 		GPRegressor<KPOL, FT> pol_regressor(kernel);
 
@@ -110,8 +110,8 @@ TEST_CASE("Gaussian Process Regressor"){
 		REQUIRE(pol_regressor.kernel().get<KPOL::r_index>() == 
 			Approx(r_kernel).margin(TEST_FLOAT_TOLERANCE));
 
-		pol_regressor.kernel().get<KPOL::N_index>() = 2*N_kernel;
-		pol_regressor.kernel().get<KPOL::r_index>() = 0.5*r_kernel;
+		pol_regressor.kernel().set<KPOL::N_index>(2*N_kernel);
+		pol_regressor.kernel().set<KPOL::r_index>(0.5*r_kernel);
 
 	}
 	

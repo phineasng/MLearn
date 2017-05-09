@@ -36,7 +36,7 @@ function setup_boost(){
 	cd ${DEPENDENCIES_DIR}/boost_1_64_0/
 	./bootstrap.sh --prefix=${DEPENDENCIES_DIR} -with-libraries=filesystem,system,iostreams,program_options
 	./b2
-	./b2 install
+	./b2 install &> out.log
 	rm -rf ${DEPENDENCIES_DIR}/boost_1_64_0
 	export BOOST_ROOT=${DEPENDENCIES_DIR}
 	cd ${DEMO_ROOT}

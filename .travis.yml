@@ -1,5 +1,5 @@
 language: cpp
-sudo: false
+sudo: required
 cache:
   ccache: true
   directories:
@@ -37,6 +37,7 @@ install:
 
 # install dependencies
 before_script:
+# build tests
   - mkdir ./test/test_build
   - cd ./test/test_build
   - export CXX="g++-4.9"
@@ -45,10 +46,16 @@ before_script:
   - export COVERALLS_REPO_TOKEN=TpmxcbIzHLa4FhBKuc8y0WQhzFoQMpQVO
   - export CTEST_OUTPUT_ON_FAILURE=1
   - cmake -DCOVERALLS=ON -DCMAKE_BUILD_TYPE=Debug ..
+#build demos
+  - cd $TRAVIS_BUILD_DIR/demos
+  - bash ./setup.sh --all 
 
 script:
+  - cd $TRAVIS_BUILD_DIR/test/test_build
   - make
   - make coveralls ARGS="-V"
+  - cd $TRAVIS_BUILD_DIR/demos/demo_build
+  - make
 
 #before we run the build
 notifications: # set notification options

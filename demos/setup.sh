@@ -148,5 +148,5 @@ setup_plplot
 
 # Let's get some shit done
 cd ${BUILD_DIR}
-export CXX="g++-4.9"
+# export CXX="g++-4.9"
 cmake -DCMAKE_BUILD_TYPE=Release ${DEMO_ROOT}

@@ -52,3 +52,10 @@ Here I will try to maintain a list of available demos:
 1. [Multivariate Gaussian sampling](https://github.com/phineasng/MLearn/tree/master/demos/demo_sampling)
 2. [Gaussian Processes sampling](https://github.com/phineasng/MLearn/tree/master/demos/demo_gaussian_process)
 3. [Gaussian Process Regression](https://github.com/phineasng/MLearn/tree/master/demos/demo_regression)
+
+## Troubleshooting
+* You might get a linking error while compiling these demos. Possible causes are:
+  * You haven't compiled/installed the binaries of the _boost libraries_.
+  * You have compiled the _boost libraries_ using a different compiler as the one used during compilation of these demos.
+* `Eigen`-related errors.
+  * If you get any `Éigen` error, the most probable cause is that you are including a different version of the Eigen library. Please be sure that only the supported version is included in your `ÍNCLUDE_PATH`

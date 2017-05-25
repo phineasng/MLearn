@@ -4,7 +4,7 @@ project(MLearnDemos)
 set(MLEARN_ROOT_DIR "../")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${MLEARN_ROOT_DIR}/cmake)
 
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++11 -O2 -Wall")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++11 -Wall")
 
 find_package(Boost REQUIRED filesystem program_options system iostreams)
 include_directories($ENV{EIGEN3_ROOT})

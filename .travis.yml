@@ -17,6 +17,7 @@ env:
     - TEST_CMAKE=$TRAVIS_BUILD_DIR/test_cmake
 os: linux
 dist: trusty
+group: deprecated-2017Q4
 compiler: g++
 addons:
   apt:

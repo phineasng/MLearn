@@ -6,6 +6,7 @@
 
 // STL includes
 #include <cmath>
+#include <type_traits>
 
 /*!
 	\def DEFINE_LAYER_NAME(name)
@@ -270,7 +271,7 @@ struct Activation<ActivationType::LEAKY_RELU>{
 			return x;
 		}
 	}
-	template <typename Scalar>\
+	template <typename Scalar>
 	static inline Scalar compute_derivative(const Scalar& x, const ActivationParams<Scalar, ActivationType::LEAKY_RELU>& params){ 
 		if (x < 0.){
 			return params.a;
@@ -282,6 +283,68 @@ struct Activation<ActivationType::LEAKY_RELU>{
 	DEFINE_DUMMY_COMPUTE_DERIVATIVE_ACTIVATED();
 	DEFINE_DUMMY_COMPUTE_DERIVATIVE_ACTIVATED_WITH_PARAMETERS(ActivationType::LEAKY_RELU);
 };
+
+/*!
+	\brief Helper class to select (at compile-time) which derivative to use
+*/
+namespace internal{
+
+template <typename Scalar, ActivationType A>
+struct ActivationDerivativeBaseWrapper{
+	ActivationParams<Scalar, A> _params; 
+	/*!
+		\brief Constructor
+	*/
+	ActivationDerivativeBaseWrapper() = default;
+	/*!
+		\brief Parameters setter
+	*/
+	void set_params(const ActivationParams<Scalar, A>& in_params){
+		_params = in_params;
+	}
+
+	/*!
+		\brief Parameters getter
+	*/
+	const ActivationParams<Scalar, A>& get_params() const{
+		return _params;
+	}
+};
+
+template <typename Scalar, ActivationType A, bool efficient>
+struct ActivationDerivativeInternalWrapper{};
+
+/*!
+	\brief Version using activated values
+	\param x pre-activation values
+	\param f_x activated values
+	\param params parameters
+*/
+template <typename Scalar, ActivationType A>
+struct ActivationDerivativeInternalWrapper<Scalar, A, true>: public ActivationDerivativeBaseWrapper<Scalar, A>{
+	using ActivationDerivativeBaseWrapper<Scalar, A>::ActivationDerivativeBaseWrapper;
+	using ActivationDerivativeBaseWrapper<Scalar, A>::set_params;
+	using ActivationDerivativeBaseWrapper<Scalar, A>::get_params;
+	inline Scalar operator()(const Scalar& x, const Scalar& f_x){
+		return Activation<A>::compute_derivative_activated(f_x, this->_params);
+	}
+};
+
+template <typename Scalar, ActivationType A>
+struct ActivationDerivativeInternalWrapper<Scalar, A, false>: public ActivationDerivativeBaseWrapper<Scalar, A>{
+	using ActivationDerivativeBaseWrapper<Scalar, A>::ActivationDerivativeBaseWrapper;
+	using ActivationDerivativeBaseWrapper<Scalar, A>::set_params;
+	using ActivationDerivativeBaseWrapper<Scalar, A>::get_params;
+	inline Scalar operator()(const Scalar& x, const Scalar& f_x){
+		return Activation<A>::compute_derivative(x, this->_params);
+	}
+};
+
+}
+
+template <typename Scalar, ActivationType A>
+using ActivationDerivativeWrapper = 
+			internal::ActivationDerivativeInternalWrapper<Scalar, A, ActivationTraits<A>::efficient_derivative>;
 
 }}
 

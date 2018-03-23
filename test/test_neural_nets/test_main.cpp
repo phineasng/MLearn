@@ -314,6 +314,67 @@ TEST_CASE("Test Neural Nets basic utils"){
 				REQUIRE_FALSE(ActivationTraits<type>::efficient_derivative);
 			}
 		}
+
+		SECTION("Test derivative wrapper"){
+
+			SECTION("Test using an activation without efficient derivative"){
+				constexpr ActivationType type = ActivationType::ATAN;
+				typedef Activation<type> atan_t;
+				ActivationDerivativeWrapper<scalar_t, type> wrapper;
+
+				scalar_t x = sample(generator);
+				scalar_t f_x = atan_t::compute(x);
+
+				scalar_t expected_derivative = atan_t::compute_derivative(x);
+				
+				// Dummy random value to be super-sure that the wrapper correctly chose the compute function which uses 
+				// the argument x instead of the efficient version
+				scalar_t f_x_dummy = f_x + sample(generator);
+
+				scalar_t derivative = wrapper(x, f_x_dummy);
+				REQUIRE(expected_derivative == Approx(derivative));
+			}
+
+			SECTION("Test using an activation without efficient derivative"){
+				constexpr ActivationType type = ActivationType::SIGMOID;
+				typedef Activation<type> sigmoid_t;
+				ActivationDerivativeWrapper<scalar_t, type> wrapper;
+
+				scalar_t x = sample(generator);
+				scalar_t f_x = sigmoid_t::compute(x);
+
+				scalar_t expected_derivative = sigmoid_t::compute_derivative(x);
+				
+				// Dummy random value to be super-sure that the wrapper correctly chose the compute function which uses 
+				// the activate value f_x instead of the basic version 
+				scalar_t x_dummy = x + sample(generator);
+
+				scalar_t derivative = wrapper(x_dummy, f_x);
+				REQUIRE(expected_derivative == Approx(derivative));
+			}
+
+			SECTION("Test wrapper with parameters"){
+				constexpr ActivationType type = ActivationType::LEAKY_RELU;
+				typedef Activation<type> leaky_relu_t;
+				ActivationParams<scalar_t, type> params;
+				ActivationDerivativeWrapper<scalar_t, type> wrapper;
+
+				for (int i = 0; i < 100; ++i){
+					scalar_t x = sample(generator);
+					scalar_t f_x = leaky_relu_t::compute(x);
+					params.a = sample(generator);
+					wrapper.set_params(params);
+					scalar_t expected_derivative = leaky_relu_t::compute_derivative(x, params);
+					scalar_t derivative = wrapper(x, f_x);
+					REQUIRE(expected_derivative == Approx(derivative));
+
+					ActivationParams<scalar_t, type> other_params = wrapper.get_params();
+					REQUIRE(params.a == Approx(other_params.a));
+				}
+				
+			}
+
+		}
 	}
 	
 }

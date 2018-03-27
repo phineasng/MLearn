@@ -325,7 +325,7 @@ struct ActivationDerivativeInternalWrapper<Scalar, A, true>: public ActivationDe
 	using ActivationDerivativeBaseWrapper<Scalar, A>::ActivationDerivativeBaseWrapper;
 	using ActivationDerivativeBaseWrapper<Scalar, A>::set_params;
 	using ActivationDerivativeBaseWrapper<Scalar, A>::get_params;
-	inline Scalar operator()(const Scalar& x, const Scalar& f_x){
+	inline Scalar operator()(const Scalar& x, const Scalar& f_x) const{
 		return Activation<A>::compute_derivative_activated(f_x, this->_params);
 	}
 };
@@ -335,7 +335,7 @@ struct ActivationDerivativeInternalWrapper<Scalar, A, false>: public ActivationD
 	using ActivationDerivativeBaseWrapper<Scalar, A>::ActivationDerivativeBaseWrapper;
 	using ActivationDerivativeBaseWrapper<Scalar, A>::set_params;
 	using ActivationDerivativeBaseWrapper<Scalar, A>::get_params;
-	inline Scalar operator()(const Scalar& x, const Scalar& f_x){
+	inline Scalar operator()(const Scalar& x, const Scalar& f_x) const{
 		return Activation<A>::compute_derivative(x, this->_params);
 	}
 };

@@ -9,12 +9,16 @@
 // MLearn
 #include <MLearn/Core>
 #include <MLearn/NeuralNets/layers/base/utils.h>
+#include <MLearn/NeuralNets/layers/fc_layer.h>
 
 // STL includes 
 #include <cmath>
 #include <chrono>
 #include <random>
 
+using namespace MLearn;
+using namespace MLearn::nn;
+typedef double scalar_t;
 
 TEST_CASE("Test Neural Nets basic utils"){	
 	
@@ -24,8 +28,6 @@ TEST_CASE("Test Neural Nets basic utils"){
 	}
 
 	SECTION("Testing activation functions"){
-		using namespace MLearn::nn;
-		typedef double scalar_t;
 
 		unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 		std::mt19937_64 generator(seed);
@@ -372,9 +374,158 @@ TEST_CASE("Test Neural Nets basic utils"){
 					REQUIRE(params.a == Approx(other_params.a));
 				}
 				
+			}																				
+		}
+	}
+}
+
+TEST_CASE("Fully connected layer"){
+	constexpr ActivationType type = ActivationType::SIGMOID;
+	typedef Activation<type> sigmoid_t;
+	srand((unsigned int) time(0));
+	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+	std::mt19937_64 generator(seed);
+	std::uniform_int_distribution<int> sample(2,6);
+
+	struct TestFCLayer: public FCLayer<scalar_t, type>{
+	public:
+		TestFCLayer(int output_dim, bool has_bias = true): FCLayer(output_dim, has_bias) {
+			REQUIRE(_output_dim == output_dim);
+			REQUIRE(_has_bias == has_bias);
+		}
+
+		void run_tests(int input_dim, int n_examples){
+			test_constructors();
+			test_getters();
+			test_layer_core_functionalities(input_dim, n_examples);
+		}
+
+	private:
+		void test_constructors() const{
+			TestFCLayer copy_constructed(*this);
+			REQUIRE(copy_constructed._output_dim == _output_dim);
+			REQUIRE(copy_constructed._has_bias == _has_bias);
+
+			TestFCLayer move_constructed(std::move(copy_constructed));
+			REQUIRE(move_constructed._output_dim == _output_dim);
+			REQUIRE(move_constructed._has_bias == _has_bias);
+		}
+
+		void test_initial_status() const{
+			REQUIRE(_input_dim == -1);
+			REQUIRE(_n_parameters == -1);
+		}
+
+		void test_getters() const{
+			REQUIRE(_has_bias == this->has_bias());
+			REQUIRE(_n_parameters == this->get_n_parameters());
+		}
+
+		void test_set_input_dim(int input_dim){
+			this->test_initial_status();
+			REQUIRE_THROWS(this->set_input_dim(0));
+			REQUIRE_THROWS(this->set_input_dim(-1));
+			this->set_input_dim(input_dim);
+			REQUIRE(_n_parameters == (_input_dim + int(_has_bias))*_output_dim);
+			REQUIRE_THROWS(this->set_input_dim(input_dim));
+		}
+
+		void test_layer_core_functionalities(int input_dim, int n_examples){
+			REQUIRE_THROWS(this->set_weights(NULL));
+			REQUIRE_THROWS(this->set_grad_weights(NULL));
+
+			MLMatrix<scalar_t> input;
+			MLMatrix<scalar_t> output_gradient;
+
+			test_set_input_dim(input_dim);
+
+			REQUIRE_THROWS(this->forward_pass(input));
+			input.resize(_input_dim, 0);
+			REQUIRE_THROWS(this->forward_pass(input));
+			input = MLMatrix<scalar_t>::Random(_input_dim, n_examples);
+			REQUIRE_THROWS(this->forward_pass(input));
+			REQUIRE_THROWS(this->set_weights(NULL));
+			REQUIRE_THROWS(this->set_grad_weights(NULL));
+
+			std::vector<scalar_t> weights(this->get_n_parameters());
+			std::vector<scalar_t> grad_weights(this->get_n_parameters());
+
+			this->set_weights(&weights[0]);
+			this->set_grad_weights(&grad_weights[0]);
+
+			REQUIRE_THROWS(this->backpropagate(output_gradient));
+			output_gradient.resize(_output_dim, 0);
+			REQUIRE_THROWS(this->backpropagate(output_gradient));
+
+			// Test forward pass
+			Eigen::Map<MLMatrix<scalar_t>> W(&weights[0], _output_dim, _input_dim);
+			Eigen::Map<MLVector<scalar_t>> b(NULL, 0);
+
+			REQUIRE((_W - W).lpNorm<Eigen::Infinity>() == Approx(0));
+			if (_has_bias){
+				new (&b) Eigen::Map<MLVector<scalar_t>>(&weights[_input_dim*_output_dim], _output_dim);
+				REQUIRE((_b - b).lpNorm<Eigen::Infinity>() == Approx(0));		
+			}
+
+			MLMatrix<scalar_t> output = this->forward_pass(input);
+			REQUIRE((_output - output).lpNorm<Eigen::Infinity>() == Approx(0));
+			REQUIRE((_output - this->get_output()).lpNorm<Eigen::Infinity>() == Approx(0));
+
+			MLMatrix<scalar_t> preactivation = W*input;
+			if (_has_bias){
+				preactivation.colwise() += b;
+			}
+			REQUIRE((_preactivation - preactivation).lpNorm<Eigen::Infinity>() == Approx(0));
+			MLMatrix<scalar_t> expected_output(preactivation.rows(), preactivation.cols());
+			for (int i = 0; i < expected_output.rows(); ++i){
+				for (int j = 0; j < expected_output.cols(); ++j){
+					expected_output(i,j) = sigmoid_t::compute(preactivation(i,j));
+				}
+			}
+			REQUIRE((_output - expected_output).lpNorm<Eigen::Infinity>() == Approx(0));
+
+			// Test backpropagation
+			scalar_t h = 1e-7;
+			std::vector<scalar_t> ref_weights(weights);
+			MLMatrix<scalar_t> out_gradient = MLMatrix<scalar_t>::Zero(_output_dim, n_examples);
+			MLMatrix<scalar_t> input_h(input);
+			for (int i = 0; i < output.rows(); ++i){
+				for (int j = 0; j < output.cols(); ++j){
+					out_gradient.setZero();
+					out_gradient(i,j) = 1;
+					this->backpropagate(out_gradient, true);
+					MLMatrix<scalar_t> input_gradient(this->_grad_input);
+
+					for (int idx = 0; idx < weights.size(); ++idx){
+						weights = ref_weights;
+						weights[idx] += h;
+
+						MLMatrix<scalar_t> diff_output = this->forward_pass(input) - output;
+						scalar_t numeric_grad_weights = diff_output(i, j)/h;
+						REQUIRE(Approx(std::abs(grad_weights[idx] - numeric_grad_weights)).margin(h) == 0);
+					}	
+
+					weights = ref_weights;
+					for (int i_input = 0; i_input < input.rows(); ++i_input){
+						for (int j_input = 0; j_input < input.cols(); ++j_input){
+							input_h = input;
+							input_h(i_input, j_input) += h;
+							MLMatrix<scalar_t> diff_output = this->forward_pass(input_h) - output;
+							scalar_t grad_input = diff_output(i,j)/h;
+							REQUIRE(Approx(std::abs(input_gradient(i_input,j_input) - grad_input)).margin(h) == 0);
+						}
+					}
+
+				}
 			}
 
 		}
-	}
-	
+	};
+
+	TestFCLayer test_with_bias(sample(generator), true);
+	test_with_bias.run_tests(sample(generator), sample(generator));
+
+	TestFCLayer test_no_bias(sample(generator), false);
+	test_no_bias.run_tests(sample(generator), sample(generator));
+
 }

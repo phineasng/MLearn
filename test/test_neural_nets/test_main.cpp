@@ -11,6 +11,7 @@
 #include <MLearn/NeuralNets/layers/base/utils.h>
 #include <MLearn/NeuralNets/layers/fc_layer.h>
 #include <MLearn/NeuralNets/neural_nets.h>
+#include <MLearn/Optimization/StochasticGradientDescent.h>
 
 // STL includes 
 #include <cmath>
@@ -456,6 +457,7 @@ TEST_CASE("Fully connected layer"){
 
 			this->set_weights(&weights[0]);
 			this->set_grad_weights(&grad_weights[0]);
+			REQUIRE((_W - this->get_W()).lpNorm<Eigen::Infinity>() == Approx(0));	
 
 			REQUIRE_THROWS(this->backpropagate(output_gradient));
 			output_gradient.resize(_output_dim, 0);
@@ -468,7 +470,8 @@ TEST_CASE("Fully connected layer"){
 			REQUIRE((_W - W).lpNorm<Eigen::Infinity>() == Approx(0));
 			if (_has_bias){
 				new (&b) Eigen::Map<MLVector<scalar_t>>(&weights[_input_dim*_output_dim], _output_dim);
-				REQUIRE((_b - b).lpNorm<Eigen::Infinity>() == Approx(0));		
+				REQUIRE((_b - b).lpNorm<Eigen::Infinity>() == Approx(0));
+				REQUIRE((_b - this->get_b()).lpNorm<Eigen::Infinity>() == Approx(0));		
 			}
 
 			MLMatrix<scalar_t> output = this->forward_pass(input);
@@ -498,7 +501,7 @@ TEST_CASE("Fully connected layer"){
 					out_gradient.setZero();
 					out_gradient(i,j) = 1;
 					this->backpropagate(out_gradient, true);
-					REQUIRE((_grad_input - this->get_input_gradient()).lpNorm<Eigen::Infinity>() == Approx(0));
+					REQUIRE((_grad_input - this->get_grad_input()).lpNorm<Eigen::Infinity>() == Approx(0));
 					MLMatrix<scalar_t> input_gradient(this->_grad_input);
 
 					for (int idx = 0; idx < weights.size(); ++idx){
@@ -538,11 +541,76 @@ TEST_CASE("Fully connected layer"){
 TEST_CASE("Neural Network"){
 	constexpr ActivationType type = ActivationType::SIGMOID;
 	typedef double scalar_t;
-
 	typedef FCLayer<scalar_t, type> layer_t;
+	constexpr LossType loss_t = LossType::CROSS_ENTROPY;
+	typedef NeuralNetwork<scalar_t, loss_t, layer_t, layer_t, layer_t> neuralnet_t;
+	srand((unsigned int) time(0));
 
-	NeuralNetwork<scalar_t, layer_t, layer_t> net(layer_t(5), layer_t(10));
-	const auto& layer = net.get_layer<0>();
-	auto net2 = make_network<scalar_t>(layer_t(5), layer_t(10));
-	net.set_input_dim(10);
+	// Inheriting from FCLayer to access its fields
+	struct TestNeuralNetwork{
+
+		static void run_test_on_network(neuralnet_t& net){
+			
+			REQUIRE(net.get_n_parameters() == -1);
+			net.set_input_dim(10);
+
+			REQUIRE(net.get_layer<0>().layer_t::get_n_parameters() > 0);
+			REQUIRE(net.get_layer<1>().layer_t::get_n_parameters() > 0);
+			REQUIRE(net.get_layer<2>().layer_t::get_n_parameters() > 0);
+			REQUIRE(net.get_n_parameters() == 
+					net.get_layer<0>().layer_t::get_n_parameters() + 
+					net.get_layer<1>().layer_t::get_n_parameters() +
+					net.get_layer<2>().layer_t::get_n_parameters());
+
+			MLVector<scalar_t> weights = MLVector<scalar_t>::Random(net.get_n_parameters());
+			MLVector<scalar_t> grad_weights(net.get_n_parameters());
+
+			REQUIRE_THROWS(net.set_weights(NULL));
+			REQUIRE_THROWS(net.set_grad_weights(NULL));
+
+			net.set_weights(weights.data());
+			net.set_grad_weights(grad_weights.data());
+
+			MLMatrix<scalar_t> X = MLMatrix<scalar_t>::Random(10, 30);
+			MLMatrix<scalar_t> Y = MLMatrix<scalar_t>::Random(net.get_layer<2>().layer_t::get_output_dim(), 30);
+
+			neuralnet_t::NeuralNetCost cost(net, X, Y);
+
+			MLVector<scalar_t> gradient;
+			MLVector<scalar_t> gradient_numerical;
+			cost.compute_gradient<Optimization::DifferentiationMode::ANALYTICAL>(weights, gradient);
+			cost.compute_gradient<Optimization::DifferentiationMode::NUMERICAL_CENTRAL>(weights, gradient_numerical);
+			REQUIRE((gradient - gradient_numerical).lpNorm<Eigen::Infinity>() == Approx(0).margin(1e-7));
+			
+			using namespace Optimization;
+			LineSearch< LineSearchStrategy::FIXED,scalar_t,uint > line_search(0.015);
+			Optimization::StochasticGradientDescent<LineSearchStrategy::FIXED,scalar_t,uint,3> minimizer;
+			minimizer.setMaxIter(10);
+			minimizer.setMaxEpoch(1);
+			minimizer.setSizeBatch(3);
+			minimizer.setNSamples(30);
+			minimizer.setLineSearchMethod(line_search);
+			minimizer.setSeed(std::chrono::system_clock::now().time_since_epoch().count());
+			scalar_t error_before = net.evaluate(X, Y);
+			net.fit(X, Y, minimizer);
+			scalar_t error_after = net.evaluate(X, Y);
+			REQUIRE(error_before > error_after);
+		}
+
+		static void run_tests(){
+			int seed = std::chrono::system_clock::now().time_since_epoch().count();
+			std::mt19937_64 generator(seed);
+			std::uniform_int_distribution<int> sample(2,6);
+
+			neuralnet_t net(layer_t(sample(generator)), layer_t(sample(generator)), layer_t(sample(generator)));
+			neuralnet_t net2 = make_network<scalar_t, loss_t>(layer_t(sample(generator)), layer_t(sample(generator)), layer_t(sample(generator)));
+			neuralnet_t net3 = make_network<scalar_t, loss_t>(net.get_layer<0>(), net.get_layer<1>(), net.get_layer<2>());
+
+			run_test_on_network(net);
+			run_test_on_network(net2);
+			run_test_on_network(net3);
+		}
+	};
+
+	TestNeuralNetwork::run_tests();
 }

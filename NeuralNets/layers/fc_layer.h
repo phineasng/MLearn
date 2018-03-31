@@ -50,6 +50,41 @@ public:
 	const ActivationParams<Scalar, A>& get_hyperparams() const{
 		return _derivative_computer.get_params();
 	}
+
+	/*!
+		\brief Get number of parameters
+	*/
+	int get_n_parameters() const{
+		return _n_parameters;
+	}
+
+	/*!
+		\brief Get output dimensions
+	*/
+	int get_output_dim() const{
+		return _output_dim;
+	}
+
+	/*!
+		\brief Check if layer has bias
+	*/
+	bool has_bias() const{
+		return _has_bias;
+	}
+
+	/*!
+		\brief Get W
+	*/
+	const Eigen::Map<const MLMatrix<Scalar>>& get_W() const{
+		return _W;
+	}
+
+	/*!
+		\brief Get b
+	*/
+	const Eigen::Map<const MLVector<Scalar>>& get_b() const{
+		return _b;
+	}
 protected:
 	int _input_dim = -1;
 	const int _output_dim = -1;
@@ -112,26 +147,6 @@ protected:
 		if (_has_bias){
 			new (&_grad_b) Eigen::Map<MLVector<Scalar>>(grad_weights + _output_dim*_input_dim, _output_dim);
 		}
-	}
-	/*!
-		\brief Get number of parameters
-	*/
-	int get_n_parameters() const{
-		return _n_parameters;
-	}
-
-	/*!
-		\brief Get output dimensions
-	*/
-	int get_output_dim() const{
-		return _output_dim;
-	}
-
-	/*!
-		\brief Check if layer has bias
-	*/
-	bool has_bias() const{
-		return _has_bias;
 	}
 	/*!
 		\brief Output getter

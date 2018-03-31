@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.0.2)
+project(MLearnFCNetMNIST)
+
+add_executable(FCNetMNIST fc_mnist.cpp)
+target_link_libraries(FCNetMNIST boost_system)
+target_link_libraries(FCNetMNIST boost_iostreams)
+target_link_libraries(FCNetMNIST boost_program_options)
+target_link_libraries(FCNetMNIST boost_filesystem)

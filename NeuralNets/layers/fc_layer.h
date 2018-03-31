@@ -4,10 +4,12 @@
 // STL includes
 #include <exception>
 #include <functional>
+#include <tuple>
 
 // MLearn includes
 #include <MLearn/Core>
 #include <MLearn/NeuralNets/layers/base/utils.h>
+#include <MLearn/NeuralNets/neural_nets.h>
 
 // Eigen includes
 #include <Eigen/Core>
@@ -23,12 +25,17 @@ namespace nn{
 */
 template <typename Scalar, ActivationType A>
 class FCLayer{
+
+	MAKE_NEURAL_NETWORK_FRIEND
+
 public:
 	/*!
 		\brief Constructor
 	*/
 	FCLayer(int output_dim, bool has_bias = true): _output_dim(output_dim), _has_bias(has_bias), 
-		_W(NULL, 0, 0), _b(NULL, 0), _grad_W(NULL, 0, 0), _grad_b(NULL, 0){}
+			_W(NULL, 0, 0), _b(NULL, 0), _grad_W(NULL, 0, 0), _grad_b(NULL, 0){
+		MLEARN_ASSERT(output_dim > 0, "[FCLayer::FCLayer] Non-positive output dim not valid!");
+	}
 
 	/*!
 		\brief (Hyper-)Parameters setter
@@ -77,7 +84,7 @@ protected:
 	*/
 	void set_input_dim(int input_dim){
 		if (_input_dim == -1){
-			MLEARN_ASSERT(input_dim > 0, "[FCLayer::set_input_dim] Zero input dim not valid!");
+			MLEARN_ASSERT(input_dim > 0, "[FCLayer::set_input_dim] Non-positive input dim not valid!");
 			_input_dim = input_dim;
 			_n_parameters = _input_dim*_output_dim;
 			if (_has_bias){
@@ -114,6 +121,13 @@ protected:
 	}
 
 	/*!
+		\brief Get output dimensions
+	*/
+	int get_output_dim() const{
+		return _output_dim;
+	}
+
+	/*!
 		\brief Check if layer has bias
 	*/
 	bool has_bias() const{
@@ -124,6 +138,12 @@ protected:
 	*/
 	const MLMatrix<Scalar>& get_output() const{
 		return _output;
+	}
+	/*!
+		\brief Input gradient getter
+	*/
+	const MLMatrix<Scalar>& get_grad_input() const{
+		return _grad_input;
 	}
 	/*!
 		\brief Forward propagate

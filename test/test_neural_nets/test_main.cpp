@@ -10,6 +10,7 @@
 #include <MLearn/Core>
 #include <MLearn/NeuralNets/layers/base/utils.h>
 #include <MLearn/NeuralNets/layers/fc_layer.h>
+#include <MLearn/NeuralNets/neural_nets.h>
 
 // STL includes 
 #include <cmath>
@@ -409,6 +410,8 @@ TEST_CASE("Fully connected layer"){
 			TestFCLayer move_constructed(std::move(copy_constructed));
 			REQUIRE(move_constructed._output_dim == _output_dim);
 			REQUIRE(move_constructed._has_bias == _has_bias);
+
+			REQUIRE_THROWS(FCLayer<scalar_t, type>(-1));
 		}
 
 		void test_initial_status() const{
@@ -419,6 +422,7 @@ TEST_CASE("Fully connected layer"){
 		void test_getters() const{
 			REQUIRE(_has_bias == this->has_bias());
 			REQUIRE(_n_parameters == this->get_n_parameters());
+			REQUIRE(_output_dim == this->get_output_dim());
 		}
 
 		void test_set_input_dim(int input_dim){
@@ -494,6 +498,7 @@ TEST_CASE("Fully connected layer"){
 					out_gradient.setZero();
 					out_gradient(i,j) = 1;
 					this->backpropagate(out_gradient, true);
+					REQUIRE((_grad_input - this->get_input_gradient()).lpNorm<Eigen::Infinity>() == Approx(0));
 					MLMatrix<scalar_t> input_gradient(this->_grad_input);
 
 					for (int idx = 0; idx < weights.size(); ++idx){
@@ -528,4 +533,16 @@ TEST_CASE("Fully connected layer"){
 	TestFCLayer test_no_bias(sample(generator), false);
 	test_no_bias.run_tests(sample(generator), sample(generator));
 
+}
+
+TEST_CASE("Neural Network"){
+	constexpr ActivationType type = ActivationType::SIGMOID;
+	typedef double scalar_t;
+
+	typedef FCLayer<scalar_t, type> layer_t;
+
+	NeuralNetwork<scalar_t, layer_t, layer_t> net(layer_t(5), layer_t(10));
+	const auto& layer = net.get_layer<0>();
+	auto net2 = make_network<scalar_t>(layer_t(5), layer_t(10));
+	net.set_input_dim(10);
 }

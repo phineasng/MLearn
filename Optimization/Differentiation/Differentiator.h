@@ -88,7 +88,7 @@ namespace MLearn{
 				static_assert( (DERIVED::ColsAtCompileTime == 1) && (DERIVED_2::ColsAtCompileTime == 1), "Inputs have to be column vectors (or compatible structures)!" );
 				static_assert( std::is_floating_point<typename DERIVED::Scalar>::value && std::is_same<typename DERIVED::Scalar, typename DERIVED_2::Scalar>::value, "Scalar types have to be the same and floating point!" );
 				static_assert( std::is_integral<IndexType>::value && std::is_unsigned<IndexType>::value, "IndexType has to be unsigned integer!" );
-				gradient.resize(x.size());
+				static_cast<DERIVED_2*>(&gradient)->resize(x.size());
 				typename DERIVED::Scalar inv_step_size = typename DERIVED::Scalar(1)/options.step_size;
 				MLVector< typename DERIVED::Scalar > x1 = x;
 				typename DERIVED::Scalar cost_in_x = cost.eval(x);
@@ -112,7 +112,7 @@ namespace MLearn{
 				static_assert( (DERIVED::ColsAtCompileTime == 1) && (DERIVED_2::ColsAtCompileTime == 1), "Inputs have to be column vectors (or compatible structures)!" );
 				static_assert( std::is_floating_point<typename DERIVED::Scalar>::value && std::is_same<typename DERIVED::Scalar, typename DERIVED_2::Scalar>::value, "Scalar types have to be the same and floating point!" );
 				static_assert( std::is_integral<IndexType>::value && std::is_unsigned<IndexType>::value, "IndexType has to be unsigned integer!" );
-				gradient.resize(x.size());
+				static_cast<DERIVED_2*>(&gradient)->resize(x.size());
 				typename DERIVED::Scalar inv_step_size = typename DERIVED::Scalar(0.5)/options.step_size;
 				MLVector< typename DERIVED::Scalar > x1 = x;
 				MLVector< typename DERIVED::Scalar > x2 = x;
@@ -138,7 +138,7 @@ namespace MLearn{
 				static_assert( (DERIVED::ColsAtCompileTime == 1) && (DERIVED_2::ColsAtCompileTime == 1), "Inputs have to be column vectors (or compatible structures)!" );
 				static_assert( std::is_floating_point<typename DERIVED::Scalar>::value && std::is_same<typename DERIVED::Scalar, typename DERIVED_2::Scalar>::value, "Scalar types have to be the same and floating point!" );
 				static_assert( std::is_integral<IndexType>::value && std::is_unsigned<IndexType>::value, "IndexType has to be unsigned integer!" );
-				gradient.resize(x.size());
+				static_cast<DERIVED_2*>(&gradient)->resize(x.size());
 				typename DERIVED::Scalar inv_step_size = typename DERIVED::Scalar(1)/options.step_size;
 				MLVector< typename DERIVED::Scalar > x1 = x;
 				typename DERIVED::Scalar cost_in_x = cost.eval(x);

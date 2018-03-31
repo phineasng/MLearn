@@ -9,21 +9,21 @@
 
 // USEFUL MACRO FOR DEFINING NECESSARY MEMBER FUNCTIONS
 #define TEMPLATED_SIGNATURE_EVAL_FUNCTION(x_variable)\
-	template < 	typename DERIVED_SIGNATURE_MACRO_q1w2 >\
-	typename DERIVED_SIGNATURE_MACRO_q1w2::Scalar eval( const Eigen::MatrixBase<DERIVED_SIGNATURE_MACRO_q1w2>& x_variable ) const
+	template < 	typename MATRIX_DERIVED_TYPE >\
+	typename MATRIX_DERIVED_TYPE::Scalar eval( const Eigen::MatrixBase<MATRIX_DERIVED_TYPE>& x_variable ) const
 
 
 #define TEMPLATED_SIGNATURE_ANALYTICAL_GRADIENT_FUNCTION(x_variable,gradient_to_compute)\
-	template< 	typename DERIVED_SIGNATURE_MACRO_q1w2,\
-		   		typename DERIVED_SIGNATURE_MACRO_q1w2_2 >\
-	void compute_analytical_gradient(  const Eigen::MatrixBase<DERIVED_SIGNATURE_MACRO_q1w2>& x_variable, Eigen::MatrixBase<DERIVED_SIGNATURE_MACRO_q1w2_2>& gradient_to_compute ) const
+	template< 	typename MATRIX_DERIVED_TYPE,\
+		   		typename MATRIX_DERIVED_TYPE_2 >\
+	void compute_analytical_gradient(  const Eigen::MatrixBase<MATRIX_DERIVED_TYPE>& x_variable, Eigen::MatrixBase<MATRIX_DERIVED_TYPE_2>& gradient_to_compute ) const
 
 
 #define TEMPLATED_SIGNATURE_STOCHASTIC_GRADIENT_FUNCTION(x_variable,gradient_to_compute,idx_to_sample)\
 	template< 	typename INDEX_TYPE_IN_MACRO_111,\
-				typename DERIVED_SIGNATURE_MACRO_q1w2,\
-				typename DERIVED_SIGNATURE_MACRO_q1w2_2 >\
-	void compute_stochastic_gradient( const Eigen::MatrixBase<DERIVED_SIGNATURE_MACRO_q1w2>& x_variable, Eigen::MatrixBase<DERIVED_SIGNATURE_MACRO_q1w2_2>& gradient_to_compute, const MLVector< INDEX_TYPE_IN_MACRO_111 >& idx_to_sample ) const
+				typename MATRIX_DERIVED_TYPE,\
+				typename MATRIX_DERIVED_TYPE_2 >\
+	void compute_stochastic_gradient( const Eigen::MatrixBase<MATRIX_DERIVED_TYPE>& x_variable, Eigen::MatrixBase<MATRIX_DERIVED_TYPE_2>& gradient_to_compute, const MLVector< INDEX_TYPE_IN_MACRO_111 >& idx_to_sample ) const
 
 
 namespace MLearn{
@@ -68,7 +68,7 @@ namespace MLearn{
 				   		typename DERIVED_2 >
 			void compute_analytical_gradient(  const Eigen::MatrixBase<DERIVED>& x, Eigen::MatrixBase<DERIVED_2>& gradient ) const{
 				MLEARN_FORCED_WARNING_MESSAGE("USING DEFAULT IMPLEMENTATION!");
-				gradient.resize(x.size());
+				static_cast<DERIVED_2*>(&gradient)->resize(x.size());
 				return;
 			}
 			// -- stochastic gradient
@@ -77,7 +77,7 @@ namespace MLearn{
 				   		typename DERIVED_2 >
 			void compute_stochastic_gradient( const Eigen::MatrixBase<DERIVED>& x, Eigen::MatrixBase<DERIVED_2>& gradient, const MLVector< IndexType >& idx ) const{
 				MLEARN_FORCED_WARNING_MESSAGE("USING DEFAULT IMPLEMENTATION!");
-				gradient.resize(x.size());
+				static_cast<DERIVED_2*>(&gradient)->resize(x.size());
 				return;
 			}
 

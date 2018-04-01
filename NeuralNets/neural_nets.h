@@ -112,6 +112,8 @@ public:
 			_net.set_weights(static_cast<const MATRIX_DERIVED_TYPE*>(&w)->data(), false);
 			const MLMatrix<Scalar>& out = _net.forward_pass(_input);
 			Scalar loss = 0;
+			MLEARN_ASSERT(_output.rows() == out.rows(), "[NeuralNetwork::NeuralNetCost::eval] Dimensions must be consistent!");
+			MLEARN_ASSERT(_output.cols() == out.cols(), "[NeuralNetwork::NeuralNetCost::eval] Dimensions must be consistent!");
 			for (int i = 0; i < out.cols(); ++i){
 				loss += LossFunction<Loss>::evaluate(out.col(i), _output.col(i));
 			}
@@ -154,6 +156,8 @@ public:
 		void forward_and_back_pass(const MLMatrix<Scalar>& input, const MLMatrix<Scalar>& output) const{
 			// TODO(phineasng): rewrite after refactoring of optimization part of the library
 			const MLMatrix<Scalar>& output_hat = _net.forward_pass(input);
+			MLEARN_ASSERT(output.rows() == output_hat.rows(), "[NeuralNetwork::NeuralNetCost::eval] Dimensions must be consistent!");
+			MLEARN_ASSERT(output.cols() == output_hat.cols(), "[NeuralNetwork::NeuralNetCost::eval] Dimensions must be consistent!");
 			_grad_output.resize(output.rows(), output.cols());
 			_grad_single_output.resize(output.rows());
 			for (int i = 0; i < output.cols(); ++i){

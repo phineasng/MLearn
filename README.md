@@ -7,9 +7,9 @@ This template library is a personal project to refresh and deepen my knowledge o
 ## Algorithms implemented
 - Machine Learning
   1. Gaussian processes
-  2. Neural networks (Feedforward Networks, RNN, RBM) (untested)
+  2. Neural networks (Fully connected Networks)
   3. K-means (untested)
-- Optimization
+- Optimization (untested)
   1. SGD and variants (untested)
   2. BFGS (untested)
 

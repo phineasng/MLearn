@@ -1,5 +1,5 @@
-./src/test/build/*
-./src/examples/build/*
-./src/build/*
-./datasets/*
-./demos/demo_build
+src/test/build/*
+src/examples/build/*
+src/build/*
+datasets/*
+demos/demo_build/*

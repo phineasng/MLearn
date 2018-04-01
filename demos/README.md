@@ -8,6 +8,7 @@ Further dependencies for the demo (the script will always try to install these):
 - [gnuplot](http://www.gnuplot.info/)
 - [gnuplot-iostream](http://stahlke.org/dan/gnuplot-iostream/)
 - [boost compiled libraries](http://www.boost.org/)
+- [CImg](http://cimg.eu/)
 
 ## Setup
 
@@ -19,6 +20,7 @@ If the options are correctly set, the script should _automatically_ perform thes
   - If you don't have the necessary dependencies (or you're not sure), you can specify the flags `--eigen`, `--boost` or `--all` to require the installation of respectively the Eigen library, Boost or both.
   - If either Eigen or Boost are already installed, you should specify respectively `--eigen_path` (the folder containing the `Eigen/` folder) or `--boost_path` (the folder you specified when installing boost with the `--prefix` flag - usually this defaults to `/usr/local/`)
   - `gnuplot` and `gnuplot-iostream` will be installed in _any_ case (super user rights are required for `gnuplot`). 
+  - As above, `CImg` will be installed in _any_ case (in this case, this just means downloading the library and moving the header file in the correct folder). 
 3. Run cmake
 
 The script can be provided with these options:
@@ -52,6 +54,7 @@ Here I will try to maintain a list of available demos:
 1. [Multivariate Gaussian sampling](https://github.com/phineasng/MLearn/tree/master/demos/demo_sampling)
 2. [Gaussian Processes sampling](https://github.com/phineasng/MLearn/tree/master/demos/demo_gaussian_process)
 3. [Gaussian Process Regression](https://github.com/phineasng/MLearn/tree/master/demos/demo_regression)
+3. [3-layer NN on MNIST](https://github.com/phineasng/MLearn/tree/master/demos/demo_mnist)
 
 ## Troubleshooting
 * You might get a linking error while compiling these demos. Possible causes are:

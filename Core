@@ -3,3 +3,4 @@
 #include "Base/MLearnMacros.h"
 #include "Base/MLearnLossFunction.h"
 #include "Base/MLearnKernels.h"
+#include "Base/ml_exceptions.h"

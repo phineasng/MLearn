@@ -31,6 +31,8 @@ This template library is a personal project to refresh and deepen my knowledge o
 ![](https://github.com/phineasng/MLearn/blob/master/demos/demo_regression/img/gp_regression.png)
 * Filters learned by a Bernoulli-Bernoulli RBM on the MNIST dataset (19 epochs)
 ![](https://github.com/phineasng/MLearn/blob/master/misc/imgs/BernoulliBernoulliRBM_19epochs.png)
+* Classification on MNIST with a 3-layer NN. Image from this [demo](https://github.com/phineasng/MLearn/tree/master/demos/demo_mnist)
+![](https://github.com/phineasng/MLearn/blob/master/demos/demo_mnist/img/demo_mnist.png)
 
 ### Disclaimer
 When I started this library it was mostly to have some fun implementing deep learning methods and C++ templates.

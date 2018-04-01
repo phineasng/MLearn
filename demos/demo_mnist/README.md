@@ -1,4 +1,4 @@
-# Gaussian Processes demo
+# Fully connected NN on MNIST demo
 
 This demo will plot a gaussian process with a user-specified kernel.
 

@@ -21,10 +21,6 @@ This template library is a personal project to refresh and deepen my knowledge o
 ## Demos
 - [Demo](https://github.com/phineasng/MLearn/tree/master/demos) 
   - A bash script is provided to setup eveything necessary to run the demos.
-- [Examples](https://github.com/phineasng/MLearn/tree/master/src/examples) 
-  - Mostly boilerplate code. While I am providing a cmake file for each examples, 
-  they might be cumbersome to run due to lack of documentation, not provided data, etc...
-  Contact me in case you want to run those examples and you encounter some problems. 
 
 ## Snapshots from experiments
 * Gaussian Process regression. Image from this [demo](https://github.com/phineasng/MLearn/tree/master/demos/demo_regression)

@@ -54,6 +54,16 @@ function setup_plplot(){
 	rm -rf ${DEPENDENCIES_DIR}/gnuplot-iostream-master/
 }
 
+function setup_CImg(){
+	# Download 
+	echo -e "\e[1m\e[33mDownloading and setting up CImg.\e[0m"
+	wget http://cimg.eu/files/CImg_latest.zip -O ${DEPENDENCIES_DIR}/CImg_latest.zip --quiet
+	unzip -o -qq ${DEPENDENCIES_DIR}/CImg_latest.zip -d ${DEPENDENCIES_DIR}
+	rm -rf ${DEPENDENCIES_DIR}/CImg_latest.zip
+	cp ${DEPENDENCIES_DIR}/CImg-2.2.2_pre033018/CImg.h ${DEP_INCLUDE_DIR}
+	rm -rf ${DEPENDENCIES_DIR}/CImg-2.2.2_pre033018/
+}
+
 function print_help(){
 	local EXIT_CODE=$1
 
@@ -145,6 +155,8 @@ done
 # At this point preliminary setup is done
 # Now we will just assume qt custom plot is not present and download it
 setup_plplot
+# same for CImg
+setup_CImg
 
 # Let's get some shit done
 cd ${BUILD_DIR}

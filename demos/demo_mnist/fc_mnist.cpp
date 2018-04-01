@@ -2,6 +2,7 @@
 #include <string>
 #include <fstream>
 #include <chrono>
+#include <random>
 
 #include <MLearn/Core>
 #include <MLearn/NeuralNets/layers/fc_layer.h>
@@ -12,15 +13,18 @@
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
 
+#include <CImg.h>
+
 using namespace std;
 using namespace MLearn;
 using namespace nn;
 using namespace Optimization;
 namespace fs = boost::filesystem;
+using namespace cimg_library;
 typedef double float_type;
 
 // import MNIST - for INTEL processor (or other little-endian processors)
-void importMNIST( const fs::path& images_path, const fs::path& labels_path, MLMatrix< float_type >& images, MLMatrix< float_type >& output ){
+int importMNIST( const fs::path& images_path, const fs::path& labels_path, MLMatrix< float_type >& images, MLMatrix< float_type >& output ){
 
 	ifstream imageFile;
 	ifstream labelFile;
@@ -155,7 +159,7 @@ void importMNIST( const fs::path& images_path, const fs::path& labels_path, MLMa
 	imageFile.close();
 	labelFile.close();
 
-	return;
+	return N_rows;
 
 }
 
@@ -167,7 +171,7 @@ int main(int argc, char* argv[]){
 	namespace po = boost::program_options;
 	typedef MLMatrix<float_type> Matrix;
 	typedef MLVector<float_type> Vector;
-	constexpr ActivationType type = ActivationType::ATAN;
+	constexpr ActivationType type = ActivationType::TANH;
 	constexpr LossType loss_t = LossType::SOFTMAX_CROSS_ENTROPY;
 	typedef FCLayer<float_type, type> layer_t;
 
@@ -177,7 +181,8 @@ int main(int argc, char* argv[]){
 
 	desc.add_options()
 		("help", "Show the help")
-		("data_folder", po::value<string>(), "Folder where to find the uncompressed data.");
+		("data_folder", po::value<string>(), "Folder where to find the uncompressed data.")
+		("visualize,v", po::bool_switch()->default_value(false), "Visualize test samples with classification.");
 
 	po::variables_map vm;
 	po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -195,6 +200,7 @@ int main(int argc, char* argv[]){
 		return 1;
 	}
 	fs::path data_folder_path(data_folder);
+	bool visualize = vm["visualize"].as<bool>();
 
 	Matrix train_images;
 	Matrix test_images;
@@ -204,8 +210,10 @@ int main(int argc, char* argv[]){
 	Vector temp;
 
 
-	importMNIST(data_folder_path/fs::path("train-images.idx3-ubyte"), data_folder_path/fs::path("train-labels.idx1-ubyte"),
-				train_images, train_labels);
+	int image_rows = importMNIST(data_folder_path/fs::path("train-images.idx3-ubyte"), 
+								 data_folder_path/fs::path("train-labels.idx1-ubyte"),
+								 train_images, train_labels);
+	int image_cols = train_images.rows()/image_rows;
 	importMNIST(data_folder_path/fs::path("t10k-images.idx3-ubyte"), data_folder_path/fs::path("t10k-labels.idx1-ubyte"),
 				test_images, test_labels);
 
@@ -219,22 +227,29 @@ int main(int argc, char* argv[]){
 	}
 
 
-	auto network = make_network<float_type, loss_t>(layer_t(20), layer_t(20), layer_t(20), layer_t(train_labels.rows()));
+	auto network = make_network<float_type, loss_t>(layer_t(100), layer_t(50), layer_t(train_labels.rows()));
 	network.set_input_dim(train_images.rows());
-	Vector weights = Vector::Random(network.get_n_parameters())*1e-2;
+	Vector weights = Vector::Random(network.get_n_parameters())*2.5;
 	network.set_weights(weights.data(), true);
 
-	LineSearch< LineSearchStrategy::FIXED,float_type,uint > line_search(0.5);
+	LineSearch< LineSearchStrategy::FIXED,float_type,uint > line_search(0.3);
 	Optimization::AdaGrad<LineSearchStrategy::FIXED,float_type,uint,0> minimizer;
-	minimizer.setMaxIter(50);
+	minimizer.setMaxIter(10);
 	minimizer.setMaxEpoch(1);
-	minimizer.setSizeBatch(200);
+	minimizer.setSizeBatch(500);
 	minimizer.setNSamples(train_images.cols());
-	minimizer.setDelta(0.1);
 	minimizer.setLineSearchMethod(line_search);
 	minimizer.setSeed(std::chrono::system_clock::now().time_since_epoch().count());
 	std::cout << "Initial loss: " << network.evaluate(test_images, test_labels) << std::endl;
+	int n_epochs = 0;
+
+	random_device rand_dev;
+	mt19937 generator(rand_dev());
+	uniform_int_distribution<int> dist(0, test_images.cols());
+	char title[50];
+	CImgDisplay main_disp(800, 800,"Test samples", 3, false, true);
 	while (true){
+		++n_epochs;
 		network.fit(train_images, train_labels, minimizer);
 		labels = network.forward_pass(test_images);
 		float_type accuracy = 0;
@@ -243,8 +258,54 @@ int main(int argc, char* argv[]){
 			temp.maxCoeff(&hat_labels[idx]);
 			accuracy += float_type( int(hat_labels[idx]) == int(real_labels[idx]) );
 		}
-		std::cout << "Loss: " << network.evaluate(test_images, test_labels);
-		std::cout << " Error rate: " << 1.0 - accuracy/float_type(test_labels.cols()) << std::endl;
+		float_type loss = network.evaluate(test_images, test_labels);
+		accuracy /= float_type(test_labels.cols());
+		float_type error_rate = 1.0 - accuracy;
+		std::cout << "Loss: " << loss;
+		std::cout << " Error rate: " << error_rate << std::endl;
+		if (visualize && (n_epochs % 10 == 0)){
+				int n_images_to_show_per_dim = 10; // This shows n*n images
+				int frame_width = 2; // surround images with a frame
+
+			    // Create empty yellow image
+			    CImg<float_type> image(n_images_to_show_per_dim*(image_cols + 2*frame_width), 
+			    					   n_images_to_show_per_dim*(image_rows + 2*frame_width), 1, 3);
+			    image = 0.0;
+			    // fill the image
+			    float red[]  = { 1.0,0,0 };
+			    float green[]  = { 0.0,1.0,0 };
+			    for (int i_grid = 0; i_grid < n_images_to_show_per_dim; ++i_grid){
+			    	for (int j_grid = 0; j_grid < n_images_to_show_per_dim; ++j_grid){
+			    		int sample_idx = dist(generator);
+
+			    		// Draw sample
+			    		int top_left_col = j_grid*(2*frame_width + image_cols) + 2;
+			    		int top_left_row = i_grid*(2*frame_width + image_rows) + 2;
+			    		for (int i = 0; i < image_rows; ++i){
+			    			for (int j = 0; j < image_cols; ++j){
+			    				int pixel_row = top_left_row + i;
+			    				int pixel_col = top_left_col + j;
+
+			    				image(pixel_row, pixel_col, 0, 0) = test_images(i*image_rows + j, sample_idx);
+			    				image(pixel_row, pixel_col, 0, 1) = test_images(i*image_rows + j, sample_idx);
+			    				image(pixel_row, pixel_col, 0, 2) = test_images(i*image_rows + j, sample_idx);
+
+			    			}
+			    		}
+	    				if (hat_labels[sample_idx] == real_labels[sample_idx]){
+	    					image.draw_text(top_left_row, top_left_col, std::to_string(int(hat_labels[sample_idx])).c_str(), green);
+	    				}else{
+	    					image.draw_text(top_left_row, top_left_col, std::to_string(int(hat_labels[sample_idx])).c_str(), red);
+	    				}
+			    	}
+			    }
+			    
+			    image.resize(800, 800);
+			    main_disp.display(image);
+			    sprintf(title, "Test samples - Loss: %.3f - Error rate: %.3f", loss, error_rate);
+			    main_disp.set_title(title);
+			    main_disp.show();
+		}
 	}
 
 	return 0;

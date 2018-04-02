@@ -20,5 +20,12 @@ This is a demo showing a simple FC neural net trained on MNIST.:
 ```
 Note that the `--data_folder` option is mandatory. This is used to indicate the folder where the 
 MNIST dataset has been stored. You can obtain the dataset [here](http://yann.lecun.com/exdb/mnist/).
-All 4 files should be downloaded and UNZIPPED in the same folder. 
+All 4 files should be downloaded and UNZIPPED in the same folder. The demo will be looking for these files
+```bash
+train-images.idx3-ubyte
+train-labels.idx1-ubyte
+t10k-images.idx3-ubyte
+t10k-labels.idx1-ubyte
+```
+If the demo throws an error, the naming of the files could be a probable cause.
 ![](https://github.com/phineasng/MLearn/blob/master/demos/demo_mnist/img/demo_mnist.png)

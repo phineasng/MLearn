@@ -60,8 +60,8 @@ function setup_CImg(){
 	wget http://cimg.eu/files/CImg_latest.zip -O ${DEPENDENCIES_DIR}/CImg_latest.zip --quiet
 	unzip -o -qq ${DEPENDENCIES_DIR}/CImg_latest.zip -d ${DEPENDENCIES_DIR}
 	rm -rf ${DEPENDENCIES_DIR}/CImg_latest.zip
-	cp ${DEPENDENCIES_DIR}/CImg-2.2.2_pre033018/CImg.h ${DEP_INCLUDE_DIR}
-	rm -rf ${DEPENDENCIES_DIR}/CImg-2.2.2_pre033018/
+	cp ${DEPENDENCIES_DIR}/CImg-*/CImg.h ${DEP_INCLUDE_DIR}
+	rm -rf ${DEPENDENCIES_DIR}/CImg-*/
 }
 
 function print_help(){
